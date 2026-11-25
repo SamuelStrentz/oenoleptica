@@ -18,9 +18,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'icons/*.svg'],
       manifest: {
-        name: 'Cave à vin',
-        short_name: 'Cave',
-        description: 'Ma cave à vin, dans ma poche.',
+        name: 'Œnoleptica',
+        short_name: 'Œnoleptica',
+        description: 'Ma cave à vin, dans ma poche : vins, vignerons, stock et profils organoleptiques.',
         lang: 'fr',
         start_url: '.',
         scope: '.',

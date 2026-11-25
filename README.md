@@ -1,6 +1,6 @@
-# Cave à vin — PWA
+# Œnoleptica
 
-Ta cave à vin sur Android : une application web installable qui marche hors ligne.
+*Œnologie + organoleptique.* Ta cave à vin sur Android : une application web installable qui marche hors ligne.
 Elle utilise la **même base SQLite** (mêmes tables, mêmes triggers) que l'appli desktop Python.
 
 ## Stack
@@ -39,7 +39,8 @@ npm run build      # vérification des types + build dans dist/
 
 ## Mise en ligne sur GitHub Pages
 
-1. Crée un dépôt GitHub (ex. `cave-a-vin-pwa`) et pousse ce dossier sur la branche `main`.
+1. Crée un dépôt GitHub et pousse ce dossier sur la branche `main`.
+   ⚠️ Par l'interface web, le dossier `.github/` (caché) n'est pas envoyé : crée `.github/workflows/deploy.yml` à la main.
 2. Sur GitHub : **Settings › Pages › Build and deployment › Source : GitHub Actions**.
 3. Chaque push sur `main` lance les tests, le build et le déploiement
    (`https://<ton-pseudo>.github.io/<nom-du-depot>/`).
@@ -47,7 +48,13 @@ npm run build      # vérification des types + build dans dist/
 
 ## Données
 
-- La cave est rangée sur le téléphone (OPFS) et chaque action est enregistrée immédiatement.
+- Chaque cave est un fichier SQLite rangé sur le téléphone (OPFS) ; chaque action est enregistrée immédiatement.
+  Plusieurs caves possibles (**Profil › Mes caves**).
+- La table `profils_cepages` (liée à `cepages`) contient le profil organoleptique type de chaque cépage
+  (robe, arômes, attaque, milieu de bouche, finale, texture, longueur, acidité / tanins / sucrosité / corps, garde).
+  Elle est ajoutée automatiquement aux anciennes bases ; l'appli Python l'ignore sans problème.
+- La saisie de la ville d'un vigneron utilise l'API publique `geo.api.gouv.fr` (connexion nécessaire ;
+  hors ligne, la saisie reste manuelle). Les régions sont les **anciennes régions** (avant 2016).
 - **Profil › Exporter** produit un `.db` qui s'ouvre dans l'appli desktop ou DB Browser for SQLite.
-  **Profil › Importer** (ou « J'ai déjà une base » au premier lancement) charge un `.db` existant.
+  **Profil › Ouvrir une cave (.db)** (ou « J'ai déjà une base » au premier lancement) ajoute un `.db` existant comme nouvelle cave.
 - ⚠️ Ne mets jamais ta base `.db` dans le dépôt : il est public sur GitHub Pages.
