@@ -1,0 +1,246 @@
+/* Palette « bordeaux & crème » reprise de l'appli desktop */
+:root {
+  --fond: #f6f2ee;
+  --carte: #ffffff;
+  --bord: #e4dbd5;
+  --texte: #2b2326;
+  --discret: #8c8085;
+  --bordeaux: #4a1325;
+  --accent: #8c2142;
+  --accent-clair: #f2dce3;
+  --vert: #2e9e5b;
+  --vert-fonce: #237a46;
+  --rouge: #d64545;
+  --danger: #b3261e;
+
+  --vin-rouge: #8c2142;
+  --vin-blanc: #e9cf6f;
+  --vin-rose: #f29cb0;
+  --vin-autre: #b9aeb1;
+
+  --rayon: 18px;
+  --ombre: 0 1px 2px rgb(74 19 37 / 6%), 0 4px 14px rgb(74 19 37 / 7%);
+  --ombre-forte: 0 8px 28px rgb(74 19 37 / 22%);
+  --serif: 'Noto Serif', 'Source Serif Pro', Georgia, serif;
+  --sans: Roboto, 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --haut-sur: env(safe-area-inset-top, 0px);
+  --bas-sur: env(safe-area-inset-bottom, 0px);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--sans);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* --- Écrans secondaires : barre de titre + contenu */
+.page {
+  min-height: 100dvh;
+  padding: calc(var(--haut-sur) + 8px) 16px calc(var(--bas-sur) + 120px);
+}
+
+.barre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  margin: 0 -8px 8px;
+}
+
+.barre h1 {
+  font-size: 1.35rem;
+  flex: 1;
+}
+
+.bouton-icone {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--bordeaux);
+}
+
+.bouton-icone:active {
+  background: var(--accent-clair);
+}
+
+/* --- Boutons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--carte);
+  border: 1px solid var(--bord);
+  transition: transform 0.12s ease, background 0.15s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.btn-principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-vert {
+  background: var(--vert);
+  border-color: var(--vert);
+  color: #fff;
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: #f0c9c6;
+}
+
+.btn-large {
+  width: 100%;
+}
+
+/* --- Cartes et champs */
+.carte {
+  background: var(--carte);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 16px;
+}
+
+.section-titre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 22px 4px 8px;
+}
+
+.champ {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.champ > span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--discret);
+  margin: 0 0 4px 4px;
+}
+
+.champ input,
+.champ select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--bord);
+  background: var(--carte);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.champ input:focus,
+.champ select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-clair);
+}
+
+.champ.invalide input {
+  border-color: var(--danger);
+}
+
+.ligne-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* --- Pastilles de choix (couleur, format…) */
+.choix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.choix button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+  background: var(--carte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.choix button[aria-pressed='true'] {
+  background: var(--accent-clair);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.point-couleur {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.vide {
+  text-align: center;
+  color: var(--discret);
+  padding: 48px 16px;
+}
