@@ -1,12 +1,16 @@
 <script setup lang="ts">
-/** Vignerons (lot 1 : consultation ; ajout / modification au lot suivant). */
+/** Vignerons : liste, fiche, ajout. */
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
+import VigneronSheet from '@/components/VigneronSheet.vue'
+import type { VigneronListe } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { joindre, pluriel } from '@/utils/affichage'
 
 const router = useRouter()
 const store = useCaveStore()
+const ouvert = ref<VigneronListe | null>(null)
 
 function initiales(libelle: string) {
   return libelle
@@ -22,10 +26,21 @@ function initiales(libelle: string) {
     <header class="barre">
       <button class="bouton-icone" aria-label="Retour" @click="router.back()"><Icone nom="retour" /></button>
       <h1>Vignerons</h1>
+      <button class="bouton-icone" aria-label="Ajouter un vigneron" @click="router.push('/vignerons/nouveau')">
+        <Icone nom="plus" />
+      </button>
     </header>
 
     <ul v-if="store.vignerons.length" class="liste">
-      <li v-for="v in store.vignerons" :key="v.id_vigneron" class="carte vigneron">
+      <li
+        v-for="v in store.vignerons"
+        :key="v.id_vigneron"
+        class="carte vigneron"
+        role="button"
+        tabindex="0"
+        @click="ouvert = v"
+        @keydown.enter="ouvert = v"
+      >
         <span class="avatar">{{ initiales(v.libelle) }}</span>
         <div class="infos">
           <strong>{{ v.libelle }}</strong>
@@ -38,7 +53,8 @@ function initiales(libelle: string) {
         </div>
       </li>
     </ul>
-    <p v-else class="vide">Aucun vigneron pour l'instant.<br />Tu peux en créer un en ajoutant un vin.</p>
+    <p v-else class="vide">Aucun vigneron pour l'instant.<br />Touche + en haut à droite pour en ajouter un.</p>
+    <VigneronSheet :resume="ouvert" @fermer="ouvert = null" />
   </main>
 </template>
 
@@ -51,6 +67,7 @@ function initiales(libelle: string) {
   gap: 10px;
 }
 .vigneron {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 14px;

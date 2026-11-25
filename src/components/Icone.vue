@@ -19,6 +19,12 @@ export const CHEMINS = {
   corbeille: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   installer: 'M12 3v12M7 10l5 5 5-5M4 21h16',
   coche: 'M5 12l5 5 9-10',
+  crayon: 'M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4',
+  catalogue: 'M4 5h16M4 10h16M4 15h10M4 20h7',
+  historique: 'M3 12a9 9 0 103-6.7M3 4v4h4M12 7v5l3 2',
+  cave: 'M4 21V10l8-6 8 6v11M9 21v-6h6v6',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  partager: 'M12 3v13M7 8l5-5 5 5M5 14v6h14v-6',
 } as const
 </script>
 

@@ -1,6 +1,6 @@
 /** Stock et mouvements : toute variation de stock passe par un mouvement tracé. */
 import type { SqlDb } from '@/db/sql'
-import type { TypeMouvement } from '@/domain/types'
+import type { Mouvement, MouvementHistorique, TypeMouvement } from '@/domain/types'
 
 export function stockDe(db: SqlDb, idVin: number): number {
   return Number(db.valeur('SELECT COALESCE(SUM(quantite), 0) FROM stock WHERE id_vin = ?', [idVin]))
@@ -43,4 +43,20 @@ export function reglerStock(db: SqlDb, idVin: number, cible: number, date: strin
   const actuel = stockDe(db, idVin)
   if (cible === actuel) return actuel
   return enregistrerMouvement(db, idVin, cible > actuel ? 'entrée' : 'sortie', Math.abs(cible - actuel), date)
+}
+
+/** Mouvements d'un vin, du plus récent au plus ancien. */
+export function mouvementsDuVin(db: SqlDb, idVin: number): Mouvement[] {
+  return db.all<Mouvement>(
+    `SELECT id_mouv, id_vin, type_mouvement, quantite_mouvement, date_mouvement
+     FROM mouvements_stock WHERE id_vin = ? ORDER BY date_mouvement DESC, id_mouv DESC`, [idVin])
+}
+
+/** Historique complet des entrées / sorties, avec le vin concerné. */
+export function historique(db: SqlDb): MouvementHistorique[] {
+  return db.all<MouvementHistorique>(`
+    SELECT m.id_mouv, m.id_vin, m.type_mouvement, m.quantite_mouvement, m.date_mouvement,
+           v.domaine, v.millesime, v.appellation, v.cuvee, v.couleur, v.prix
+    FROM mouvements_stock m LEFT JOIN vins v ON v.id_vin = m.id_vin
+    ORDER BY m.date_mouvement DESC, m.id_mouv DESC`)
 }

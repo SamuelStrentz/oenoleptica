@@ -244,3 +244,73 @@ h3 {
   color: var(--discret);
   padding: 48px 16px;
 }
+
+/* --- Formulaires plein écran : bouton d'enregistrement collé en bas */
+.formulaire {
+  padding-bottom: calc(var(--bas-sur) + 110px);
+}
+
+.valider {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px calc(var(--bas-sur) + 14px);
+  background: linear-gradient(transparent, var(--fond) 30%);
+  z-index: 10;
+}
+
+/* --- Tableaux (historique, catalogue) */
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tableau th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--discret);
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--bord);
+}
+
+.tableau td {
+  padding: 10px 6px;
+  border-bottom: 1px solid #f0e9e4;
+  vertical-align: top;
+}
+
+.tableau tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableau .nombre {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tableau tbody tr:active {
+  background: var(--accent-clair);
+}
+
+.badge {
+  display: inline-block;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-align: center;
+  color: #fff;
+  background: var(--vert);
+}
+
+.badge.vide,
+.badge.sortie {
+  background: var(--rouge);
+}

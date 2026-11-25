@@ -17,3 +17,18 @@ export function joindre(...morceaux: (string | number | null | undefined)[]): st
 export function pluriel(n: number, mot: string, motPluriel = mot + 's'): string {
   return `${n.toLocaleString('fr-FR')} ${n > 1 ? motPluriel : mot}`
 }
+
+/** '2026-11-25' -> '25/11/2026' */
+export function dateCourte(iso: string): string {
+  const [a, m, j] = iso.split('-')
+  return j && m && a ? `${j}/${m}/${a}` : iso
+}
+
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+
+/** '2026-11-25' -> 'Novembre 2026' */
+export function moisAnnee(iso: string): string {
+  const [a, m] = iso.split('-')
+  const nom = MOIS[Number(m) - 1]
+  return nom ? `${nom.charAt(0).toUpperCase()}${nom.slice(1)} ${a}` : iso
+}

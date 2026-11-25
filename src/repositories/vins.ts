@@ -1,9 +1,10 @@
 /** Vins : lecture de la cave, ajout, modification, suppression. */
 import type { SqlDb } from '@/db/sql'
-import type { AjoutVin, ChampsVin, Statistiques, VinCave } from '@/domain/types'
+import type { AjoutVin, ChampsVin, Statistiques, VinCave, VinDetail } from '@/domain/types'
 import { aujourdhui } from '@/domain/parsers'
-import { memoriserCepages } from './cepages'
-import { insererVigneron } from './vignerons'
+import { cepagesDuVin, memoriserCepages } from './cepages'
+import { insererVigneron, lireVigneron } from './vignerons'
+import { mouvementsDuVin } from './stock'
 
 /**
  * La cave : un vin par ligne avec son stock, la région du vigneron, la note
@@ -25,6 +26,21 @@ export function listerCave(db: SqlDb): VinCave[] {
 
 export function lireVinCave(db: SqlDb, idVin: number): VinCave | undefined {
   return listerCave(db).find((v) => v.id_vin === idVin)
+}
+
+/** Fiche complète d'un vin : vigneron, avis, mouvements, cépages et leurs profils. */
+export function lireDetailVin(db: SqlDb, idVin: number): VinDetail {
+  const vin = lireVinCave(db, idVin)
+  if (!vin) throw new Error('Vin introuvable.')
+  return {
+    vin,
+    vigneron: vin.id_vigneron ? lireVigneron(db, vin.id_vigneron) ?? null : null,
+    avis: db.all(
+      'SELECT note, categorie FROM avis WHERE id_vin = ? AND (note IS NOT NULL OR categorie IS NOT NULL) ORDER BY id_avis',
+      [idVin]),
+    mouvements: mouvementsDuVin(db, idVin),
+    cepages: cepagesDuVin(db, vin.cepage),
+  }
 }
 
 function verifierChamps(d: ChampsVin): void {

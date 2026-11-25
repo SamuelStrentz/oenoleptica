@@ -34,7 +34,7 @@ const cible = ref<Direction | null>(null)
 let depart = { x: 0, y: 0 }
 let minuteur: ReturnType<typeof setTimeout> | undefined
 
-const visible = computed(() => route.name !== 'ajout')
+const visible = computed(() => !route.meta.formulaire)
 const consigne = computed(() => (cible.value ? ACTIONS[cible.value].libelle : 'Glisse vers une action'))
 
 function ouvrir() {

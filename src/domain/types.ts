@@ -87,9 +87,91 @@ export interface Statistiques {
 
 export type EtatCave = 'absente' | 'prete'
 
+/** Une cave = un fichier .db rangé sur le téléphone. */
+export interface Cave {
+  fichier: string
+  nom: string
+}
+
 export interface InfoStockage {
   etat: EtatCave
   /** false = stockage OPFS indisponible : la cave ne survivra pas à la fermeture. */
   persistant: boolean
   versionSqlite: string
+  /** Cave ouverte (null si aucune). */
+  cave: Cave | null
+  /** Toutes les caves présentes sur le téléphone. */
+  caves: Cave[]
+}
+
+export interface Mouvement {
+  id_mouv: number
+  id_vin: number
+  type_mouvement: TypeMouvement
+  quantite_mouvement: number
+  date_mouvement: string
+}
+
+/** Mouvement + vin concerné (historique). */
+export interface MouvementHistorique extends Mouvement {
+  domaine: string | null
+  millesime: number | null
+  appellation: string | null
+  cuvee: string | null
+  couleur: string | null
+  prix: number | null
+}
+
+export interface ProfilOrganoleptique {
+  robe_couleur: string | null
+  robe_intensite: string | null
+  aromes_nez: string | null
+  aromes_bouche: string | null
+  attaque: string | null
+  milieu_bouche: string | null
+  finale: string | null
+  texture: string | null
+  longueur: string | null
+  acidite: number | null
+  tanins: number | null
+  sucrosite: number | null
+  corps: number | null
+  garde: string | null
+}
+
+/** Un cépage du vin, avec son profil type s'il est connu. */
+export interface CepageDuVin {
+  nom: string
+  type: TypeCepage
+  profil: ProfilOrganoleptique | null
+}
+
+/** Tout ce que la base sait d'un vin (fiche détaillée). */
+export interface VinDetail {
+  vin: VinCave
+  vigneron: Vigneron | null
+  avis: { note: number | null; categorie: string | null }[]
+  mouvements: Mouvement[]
+  cepages: CepageDuVin[]
+}
+
+/** Ligne du catalogue d'un vigneron. */
+export interface LigneCatalogue {
+  id_vin: number
+  domaine: string
+  cepage: string | null
+  millesime: number | null
+  appellation: string | null
+  cuvee: string | null
+  cru: string | null
+  couleur: string | null
+  prix: number | null
+  quantite: number
+}
+
+export interface LiensVigneron {
+  vins: number
+  stock: number
+  avis: number
+  mouvements: number
 }

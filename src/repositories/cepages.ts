@@ -4,7 +4,9 @@ import { CEPAGES_INITIAUX } from '@/db/schema'
 import {
   cleCepage, decouperCepages, majusculeInitiale, typeDepuisCouleur, type TypeCepage,
 } from '@/domain/cepages'
-import type { Cepages } from '@/domain/types'
+import type { CepageDuVin, Cepages, ProfilOrganoleptique } from '@/domain/types'
+import { COLONNES_PROFIL } from '@/db/profils-cepages'
+import { semerProfils } from './structure'
 
 /** {nom: 'rouge' | 'blanc' | null} : cépages usuels + ceux de la table. */
 export function lireCepages(db: SqlDb): Cepages {
@@ -38,4 +40,27 @@ export function memoriserCepages(db: SqlDb, paires: [string | null, string | nul
       typeDepuisCouleur(couleur),
     ])
   }
+  if (db.tableExiste('profils_cepages')) semerProfils(db)
+}
+
+/** Cépages d'un texte « Gamay, Syrah » avec leur type et leur profil organoleptique. */
+export function cepagesDuVin(db: SqlDb, texteCepage: string | null): CepageDuVin[] {
+  const noms = decouperCepages(texteCepage)
+  if (!noms.length) return []
+  const types = lireCepages(db)
+  const typeParCle = new Map(Object.entries(types).map(([n, t]) => [cleCepage(n), t]))
+  const profils = new Map<string, ProfilOrganoleptique>()
+  if (db.tableExiste('profils_cepages')) {
+    for (const l of db.all<ProfilOrganoleptique & { nom: string }>(
+      `SELECT c.nom, ${COLONNES_PROFIL.map((k) => 'p.' + k).join(', ')}
+       FROM profils_cepages p JOIN cepages c ON c.id_cepage = p.id_cepage`)) {
+      const { nom, ...profil } = l
+      profils.set(cleCepage(nom), profil)
+    }
+  }
+  return noms.map((nom) => ({
+    nom,
+    type: typeParCle.get(cleCepage(nom)) ?? null,
+    profil: profils.get(cleCepage(nom)) ?? null,
+  }))
 }

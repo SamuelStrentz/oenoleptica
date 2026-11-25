@@ -4,13 +4,20 @@ import type { VinCave } from '@/domain/types'
 import { couleurPastille, joindre } from '@/utils/affichage'
 
 const props = defineProps<{ vin: VinCave; recent?: boolean }>()
-defineEmits<{ stock: [] }>()
+defineEmits<{ stock: []; ouvrir: [] }>()
 
 const detail = computed(() => joindre(props.vin.cuvee, props.vin.cru))
 </script>
 
 <template>
-  <article class="vignette" :class="{ recent, epuise: vin.quantite === 0 }">
+  <article
+    class="vignette"
+    :class="{ recent, epuise: vin.quantite === 0 }"
+    role="button"
+    tabindex="0"
+    @click="$emit('ouvrir')"
+    @keydown.enter="$emit('ouvrir')"
+  >
     <span
       class="pastille-couleur"
       :style="{ background: couleurPastille(vin.couleur) }"
@@ -44,6 +51,11 @@ const detail = computed(() => joindre(props.vin.cuvee, props.vin.cru))
   flex-direction: column;
   gap: 3px;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.vignette:active {
+  transform: scale(0.98);
 }
 .vignette::after {
   /* liseré de la couleur du vin en bas de la carte */

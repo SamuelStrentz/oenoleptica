@@ -25,3 +25,16 @@ export function insererAvis(db: SqlDb, idVin: number, note: number | null, categ
   }
   return db.run('INSERT INTO avis (id_vin, note, categorie) VALUES (?, ?, ?)', [idVin, note, categorie]).lastId
 }
+
+/**
+ * Fixe l'avis principal d'un vin (première ligne d'avis, créée au besoin).
+ * Utilisé par le formulaire de modification.
+ */
+export function definirAvis(db: SqlDb, idVin: number, note: number | null, categorie: string | null): void {
+  const premier = db.valeur<number>('SELECT MIN(id_avis) FROM avis WHERE id_vin = ?', [idVin])
+  if (premier !== undefined && premier !== null) {
+    db.run('UPDATE avis SET note = ?, categorie = ? WHERE id_avis = ?', [note, categorie, premier])
+  } else {
+    db.run('INSERT INTO avis (id_vin, note, categorie) VALUES (?, ?, ?)', [idVin, note, categorie])
+  }
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** Panneau qui monte du bas de l'écran (fermeture : voile ou bouton retour). */
 import { onBeforeUnmount, watch } from 'vue'
+import { retourHistorique } from '@/utils/panneaux'
 
 const props = defineProps<{ ouvert: boolean; titre?: string }>()
 const emit = defineEmits<{ fermer: [] }>()
@@ -17,7 +18,7 @@ watch(
       window.addEventListener('popstate', surRetour, { once: true })
     } else {
       window.removeEventListener('popstate', surRetour)
-      if (history.state?.panneau) history.back()
+      if (history.state?.panneau) retourHistorique()
     }
   },
 )

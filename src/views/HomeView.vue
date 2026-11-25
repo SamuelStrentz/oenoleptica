@@ -5,6 +5,8 @@ import { useCaveStore, type Filtre } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
 import VinCard from '@/components/VinCard.vue'
 import StockSheet from '@/components/StockSheet.vue'
+import VinDetailSheet from '@/components/VinDetailSheet.vue'
+import OngletsAccueil from '@/components/OngletsAccueil.vue'
 import Icone from '@/components/Icone.vue'
 import type { VinCave } from '@/domain/types'
 import { pluriel } from '@/utils/affichage'
@@ -12,6 +14,7 @@ import { pluriel } from '@/utils/affichage'
 const store = useCaveStore()
 const ui = useUiStore()
 const vinStock = ref<VinCave | null>(null)
+const vinOuvert = ref<number | null>(null)
 const creation = ref(false)
 const fichier = ref<HTMLInputElement>()
 const logo = `${import.meta.env.BASE_URL}icons/icon.svg`
@@ -25,7 +28,7 @@ const FILTRES: { val: Filtre; libelle: string }[] = [
 async function creer() {
   creation.value = true
   try {
-    await store.creer()
+    await store.creer('Ma cave')
     ui.toast('Ta cave est prête 🍷')
   } catch (e) {
     ui.erreur(e)
@@ -63,8 +66,8 @@ onMounted(async () => {
   <main v-if="!store.prete" class="accueil-vide">
     <div class="intro">
       <img :src="logo" alt="" width="96" height="96" />
-      <h1>Cave à vin</h1>
-      <p>Aucune cave pour l'instant. Touche le bouton du bas pour créer la tienne : elle est rangée sur ton téléphone.</p>
+      <h1>Œnoleptica</h1>
+      <p>Ta cave à vin, dans ta poche. Touche le bouton du bas pour créer ta première cave : elle est rangée sur ton téléphone.</p>
       <button class="lien" :disabled="creation" @click="fichier?.click()">
         <Icone nom="importer" :taille="18" /> J'ai déjà une base (.db)
       </button>
@@ -79,7 +82,8 @@ onMounted(async () => {
   <!-- La cave -->
   <main v-else class="page cave">
     <header class="entete">
-      <h1>Ma cave</h1>
+      <OngletsAccueil />
+      <h1>{{ store.nomCave }}</h1>
       <p>
         {{ pluriel(store.totalBouteilles, 'bouteille') }} · {{ pluriel(store.vins.length, 'vin') }}
       </p>
@@ -112,6 +116,7 @@ onMounted(async () => {
           :vin="vin"
           :recent="vin.id_vin === store.dernierVin"
           @stock="vinStock = vin"
+          @ouvrir="vinOuvert = vin.id_vin"
         />
       </TransitionGroup>
       <p v-else class="vide">Aucun vin ne correspond.</p>
@@ -124,6 +129,7 @@ onMounted(async () => {
     </div>
 
     <StockSheet :vin="vinStock" @fermer="vinStock = null" />
+    <VinDetailSheet :id-vin="vinOuvert" @fermer="vinOuvert = null" />
   </main>
 </template>
 
@@ -210,6 +216,7 @@ onMounted(async () => {
   padding: 18px 4px 14px;
 }
 .entete h1 {
+  margin-top: 14px;
   font-size: 1.9rem;
   color: var(--bordeaux);
 }
