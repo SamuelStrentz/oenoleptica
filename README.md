@@ -46,6 +46,20 @@ npm run build      # vérification des types + build dans dist/
    (`https://<ton-pseudo>.github.io/<nom-du-depot>/`).
 4. Sur le téléphone, ouvre l'adresse dans Chrome, puis **Profil › Installer** (ou menu ⋮ › *Installer l'application*).
 
+## Profil organoleptique et dégustations
+
+- **Échelle commune** (`src/domain/profil/echelles.ts`) : notes de 0 à 5 par demi-points, un mot par cran
+  (acidité : plate · molle · souple · fraîche · vive · nerveuse…), longueur en caudalies, teintes par couleur.
+- **Roue des arômes** (`aromes.ts`) : 13 familles, 50 descripteurs (primaires / secondaires / tertiaires).
+- **Moteur** (`moteur.ts`) : profil calculé par couches, chacune tracée pour l'explication « Pourquoi ces valeurs ? » :
+  cépage(s) → style (mentions Sec, Doux, VT, Brut…) → appellation → mentions (grand cru, fût…) → climat → sols
+  → millésime → vieillissement (courbes selon la garde, fenêtre de dégustation) → corrections apprises.
+- **Connaissances** (`connaissances/`) : ~65 appellations, climats, sols, caractère des millésimes 2005-2025.
+  Repères généraux, livrés avec l'appli (mis à jour avec elle).
+- **Apprentissage** (`apprentissage.ts`) : l'écart entre tes dégustations et le calcul est moyenné (ton palais,
+  l'appellation, le vigneron) et freiné tant qu'il y a peu de dégustations.
+- **Table `degustations`** : une ligne par dégustation (mêmes critères, arômes en JSON, note, conclusion, commentaire).
+
 ## Données
 
 - **Dossier local** : au premier lancement (ou dans **Profil › Dossier local**), on choisit un dossier, par ex.

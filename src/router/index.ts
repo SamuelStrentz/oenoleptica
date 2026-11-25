@@ -19,6 +19,11 @@ export const router = createRouter({
       path: '/vin/:id/modifier', name: 'modifier-vin', props: true,
       component: () => import('@/views/VinFormView.vue'), meta: { formulaire: true },
     },
+    { path: '/degustation', name: 'choix-degustation', component: () => import('@/views/DegustationView.vue') },
+    {
+      path: '/degustation/:id', name: 'degustation', props: true,
+      component: () => import('@/views/DegustationView.vue'), meta: { formulaire: true },
+    },
     { path: '/vignerons', name: 'vignerons', component: () => import('@/views/VigneronsView.vue') },
     {
       path: '/vignerons/nouveau', name: 'nouveau-vigneron',

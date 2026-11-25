@@ -68,6 +68,7 @@ export function compterLiensVigneron(db: SqlDb, id: number): LiensVigneron {
 /** Supprime un vigneron, ses vins et le stock / avis / mouvements de ces vins. */
 export function effacerVigneron(db: SqlDb, id: number): void {
   db.tx(() => {
+    if (db.tableExiste('degustations')) db.run(`DELETE FROM degustations WHERE id_vin IN (${SOUS_REQUETE})`, [id])
     db.run(`DELETE FROM mouvements_stock WHERE id_vin IN (${SOUS_REQUETE})`, [id])
     db.run(`DELETE FROM stock WHERE id_vin IN (${SOUS_REQUETE})`, [id])
     db.run(`DELETE FROM avis WHERE id_vin IN (${SOUS_REQUETE})`, [id])

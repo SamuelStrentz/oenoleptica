@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { cave as api } from '@/db/client'
 import { useDossierStore } from './dossier'
+import type { Degustation } from '@/domain/profil/types'
 import type {
   AjoutVin, Cepages, ChampsVin, InfoStockage, NouveauVigneron, Statistiques, VigneronListe, VinCave,
 } from '@/domain/types'
@@ -137,6 +138,20 @@ export const useCaveStore = defineStore('cave', () => {
     return vin
   }
 
+  async function ajouterDegustation(d: Degustation, retirerBouteille: boolean) {
+    const vin = await api.ajouterDegustation(d, retirerBouteille)
+    dernierVin.value = vin.id_vin
+    await recharger()
+    apresEcriture()
+    return vin
+  }
+
+  async function supprimerDegustation(id: number) {
+    await api.supprimerDegustation(id)
+    await recharger()
+    apresEcriture()
+  }
+
   async function supprimerVin(idVin: number) {
     await api.supprimerVin(idVin)
     await recharger()
@@ -176,7 +191,7 @@ export const useCaveStore = defineStore('cave', () => {
     chargement, erreur, stockage, vins, vignerons, cepages, categories, stats, filtre, recherche,
     dernierVin, prete, nomCave, totalBouteilles, vinsAffiches,
     demarrer, recharger, creer, ouvrir, importer, importerOctets, remplacer, exporter, supprimer,
-    ajouterVin, modifierVin, supprimerVin, reglerStock,
+    ajouterVin, modifierVin, supprimerVin, reglerStock, ajouterDegustation, supprimerDegustation,
     ajouterVigneron, modifierVigneron, supprimerVigneron,
     // lectures ponctuelles (pas d'état partagé)
     detailVin: api.detailVin, historique: api.historique, catalogue: api.catalogue,

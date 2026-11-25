@@ -20,11 +20,17 @@ worker.onmessage = (ev: MessageEvent<Reponse>) => {
   else attente.ko(new Error(r.erreur))
 }
 
+/** Les objets réactifs de Vue (proxies) ne passent pas vers un worker : copie simple. */
+function cloner(valeur: unknown): unknown {
+  if (valeur === null || typeof valeur !== 'object' || valeur instanceof Uint8Array) return valeur
+  return JSON.parse(JSON.stringify(valeur))
+}
+
 function appeler(methode: keyof ApiCave, args: unknown[]): Promise<unknown> {
   const id = ++compteur
   return new Promise((ok, ko) => {
     enAttente.set(id, { ok, ko })
-    worker.postMessage({ id, methode, args } satisfies Requete)
+    worker.postMessage({ id, methode, args: args.map(cloner) } satisfies Requete)
   })
 }
 

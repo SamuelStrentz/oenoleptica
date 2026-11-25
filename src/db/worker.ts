@@ -24,7 +24,10 @@ import { lireCepages } from '@/repositories/cepages'
 import { definirAvis, listerCategories } from '@/repositories/avis'
 import { historique, reglerStock } from '@/repositories/stock'
 import { aujourdhui } from '@/domain/parsers'
-import type { AjoutVin, Cave, ChampsVin, InfoStockage, NouveauVigneron } from '@/domain/types'
+import { profilDuVin } from '@/repositories/profil'
+import { degustationsDuVin, insererDegustation, supprimerDegustation } from '@/repositories/degustations'
+import type { Degustation } from '@/domain/profil/types'
+import type { AjoutVin, Cave, ChampsVin, FicheVin, InfoStockage, NouveauVigneron } from '@/domain/types'
 
 const FICHIER_IMPORT = '/__import__.db'
 /** Fichier de la cave créée au lot 1 (avant les caves multiples). */
@@ -226,7 +229,11 @@ const api = {
   catalogue: (id: number) => catalogueVigneron(base(), id),
   cepages: () => lireCepages(base()),
   categories: () => listerCategories(base()),
-  detailVin: (idVin: number) => lireDetailVin(base(), idVin),
+  detailVin: (idVin: number): FicheVin => ({
+    ...lireDetailVin(base(), idVin),
+    profil: profilDuVin(base(), idVin),
+    degustations: degustationsDuVin(base(), idVin),
+  }),
   historique: () => historique(base()),
 
   // --- Écriture (chaque appel est enregistré immédiatement)
@@ -247,6 +254,11 @@ const api = {
     return lireVinCave(base(), idVin)!
   },
   supprimerVin: (idVin: number) => effacerVin(base(), idVin),
+  ajouterDegustation(d: Degustation, retirerBouteille: boolean) {
+    insererDegustation(base(), d, retirerBouteille)
+    return lireVinCave(base(), d.id_vin)!
+  },
+  supprimerDegustation: (id: number) => supprimerDegustation(base(), id),
   ajouterVigneron: (v: NouveauVigneron) => insererVigneron(base(), v),
   modifierVigneron: (id: number, v: NouveauVigneron) => majVigneron(base(), id, v),
   supprimerVigneron: (id: number) => effacerVigneron(base(), id),

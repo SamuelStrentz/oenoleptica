@@ -3,7 +3,7 @@
  * Bouton central vert.
  *  - Tap court            : ajouter une bouteille (formulaire d'ajout).
  *  - Appui long + glisser : menu en croix —
- *      ← Vignerons   ↑ Ajouter un vin   → Profil   ↓ Accueil
+ *      ← Vignerons   ↑ Déguster (fiche de dégustation)   → Profil   ↓ Accueil
  *    On relâche sur une direction pour y aller, au centre pour annuler.
  *    Glisser franchement sans attendre ouvre aussi le menu.
  */
@@ -16,7 +16,7 @@ type Direction = 'gauche' | 'haut' | 'droite' | 'bas'
 
 const ACTIONS: Record<Direction, { libelle: string; icone: keyof typeof CHEMINS; route: string }> = {
   gauche: { libelle: 'Vignerons', icone: 'vigneron', route: '/vignerons' },
-  haut: { libelle: 'Ajouter un vin', icone: 'bouteille', route: '/ajout' },
+  haut: { libelle: 'Déguster', icone: 'verre', route: '/degustation' },
   droite: { libelle: 'Profil', icone: 'profil', route: '/profil' },
   bas: { libelle: 'Accueil', icone: 'maison', route: '/' },
 }

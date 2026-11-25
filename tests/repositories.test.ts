@@ -21,7 +21,7 @@ describe('structure', () => {
     const objets = db.all<{ type: string; name: string }>(
       "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name")
     expect(objets.map((o) => `${o.type}:${o.name}`)).toEqual([
-      'table:avis', 'table:cepages', 'table:mouvements_stock', 'table:profils_cepages', 'table:stock',
+      'table:avis', 'table:cepages', 'table:degustations', 'table:mouvements_stock', 'table:profils_cepages', 'table:stock',
       'table:vignerons', 'table:vins',
       'trigger:trg_mouv_maj_stock', 'trigger:trg_vin_init_stock',
     ])
@@ -40,7 +40,7 @@ describe('structure', () => {
     const db = nouvelleBase(false)
     db.exec(`CREATE TABLE vignerons (id_vigneron INTEGER PRIMARY KEY, prenom TEXT, nom TEXT NOT NULL)`)
     db.exec(`CREATE TABLE vins (id_vin INTEGER PRIMARY KEY, id_vigneron INTEGER, domaine TEXT NOT NULL)`)
-    expect(migrer(db)).toEqual(['vins.cuvee', 'vins.cru', 'vins.prix', 'vignerons.ville', 'vignerons.mail', 'cepages', 'profils_cepages'])
+    expect(migrer(db)).toEqual(['vins.cuvee', 'vins.cru', 'vins.prix', 'vignerons.ville', 'vignerons.mail', 'cepages', 'profils_cepages', 'degustations'])
     expect(migrer(db)).toEqual([])
   })
 })

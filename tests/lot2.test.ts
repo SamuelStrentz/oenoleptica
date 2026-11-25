@@ -88,3 +88,26 @@ describe('anciennes régions', () => {
     expect(ANCIENNES_REGIONS).toHaveLength(27)
   })
 })
+
+describe('dégustations', () => {
+  it('enregistre, alimente l’avis, retire une bouteille, se supprime avec le vin', async () => {
+    const { insererDegustation, degustationsDuVin } = await import('@/repositories/degustations')
+    const { profilDuVin } = await import('@/repositories/profil')
+    const { effacerVin } = await import('@/repositories/vins')
+    const { stockDe } = await import('@/repositories/stock')
+    const db = nouvelleBase()
+    const id = insererVin(db, vin({ quantite: 2, cepage: 'Syrah', couleur: 'Rouge', appellation: 'Crozes-Hermitage' }), '2026-01-01')
+    const vide = { teinte: null, intensite_robe: null, intensite_nez: null, sucre: null, acidite: null, amertume: null,
+      salinite: null, alcool: null, tanins: null, corps: null, effervescence: null, longueur: null, conclusion: null, commentaire: null }
+    insererDegustation(db, { ...vide, id_vin: id, date_degustation: '2026-11-20', aromes: { violette: 1, poivre: 0.5 },
+      tanins: 4.5, note: 16 }, true)
+    expect(stockDe(db, id)).toBe(1)
+    const [d] = degustationsDuVin(db, id)
+    expect(d.aromes).toEqual({ violette: 1, poivre: 0.5 })
+    expect(db.get('SELECT note FROM avis WHERE id_vin = ?', [id])).toEqual({ note: 16 })
+    const p = profilDuVin(db, id, 2026)
+    expect(p.couches).toContain('Ton palais')
+    effacerVin(db, id)
+    expect(db.valeur('SELECT COUNT(*) FROM degustations')).toBe(0)
+  })
+})

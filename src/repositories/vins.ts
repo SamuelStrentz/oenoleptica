@@ -106,6 +106,7 @@ export function majVin(db: SqlDb, idVin: number, idVigneron: number | null, d: C
 /** Supprime un vin et ses lignes liées (mouvements, stock, avis). */
 export function effacerVin(db: SqlDb, idVin: number): void {
   db.tx(() => {
+    if (db.tableExiste('degustations')) db.run('DELETE FROM degustations WHERE id_vin = ?', [idVin])
     db.run('DELETE FROM mouvements_stock WHERE id_vin = ?', [idVin])
     db.run('DELETE FROM stock WHERE id_vin = ?', [idVin])
     db.run('DELETE FROM avis WHERE id_vin = ?', [idVin])

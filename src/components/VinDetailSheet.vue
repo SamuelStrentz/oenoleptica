@@ -4,9 +4,9 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomSheet from './BottomSheet.vue'
 import Icone from './Icone.vue'
-import JaugeProfil from './JaugeProfil.vue'
+import ProfilVin from './profil/ProfilVin.vue'
 import StockSheet from './StockSheet.vue'
-import type { ProfilOrganoleptique, VinDetail } from '@/domain/types'
+import type { FicheVin, ProfilOrganoleptique } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
 import { formaterPrix, nombreCourt } from '@/domain/parsers'
@@ -20,7 +20,7 @@ const emit = defineEmits<{ fermer: [] }>()
 const router = useRouter()
 const store = useCaveStore()
 const ui = useUiStore()
-const detail = ref<VinDetail | null>(null)
+const detail = ref<FicheVin | null>(null)
 const stockOuvert = ref(false)
 
 async function charger(id: number | null) {
@@ -60,22 +60,6 @@ const infos = computed(() => {
 
 const avecProfil = computed(() => (detail.value?.cepages ?? []).filter((c) => c.profil))
 
-/** Moyenne des cépages du vin pour les 4 jauges. */
-const jauges = computed(() => {
-  const profils = avecProfil.value.map((c) => c.profil!)
-  if (!profils.length) return []
-  const moyenne = (k: keyof ProfilOrganoleptique) => {
-    const vals = profils.map((p) => p[k]).filter((x): x is number => typeof x === 'number')
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
-  }
-  return [
-    { libelle: 'Acidité', valeur: moyenne('acidite') },
-    { libelle: 'Tanins', valeur: moyenne('tanins') },
-    { libelle: 'Sucrosité', valeur: moyenne('sucrosite') },
-    { libelle: 'Corps', valeur: moyenne('corps') },
-  ]
-})
-
 const RUBRIQUES: [keyof ProfilOrganoleptique, string][] = [
   ['aromes_nez', 'Nez'],
   ['aromes_bouche', 'Rétro-olfaction'],
@@ -86,6 +70,23 @@ const RUBRIQUES: [keyof ProfilOrganoleptique, string][] = [
   ['longueur', 'Longueur'],
   ['garde', 'Garde'],
 ]
+
+async function deguster() {
+  const id = props.idVin
+  emit('fermer')
+  await apresPanneau()
+  router.push(`/degustation/${id}`)
+}
+
+async function supprimerDegustation(id: number) {
+  if (!confirm('Supprimer cette dégustation ?')) return
+  try {
+    await store.supprimerDegustation(id)
+    await charger(props.idVin)
+  } catch (e) {
+    ui.erreur(e)
+  }
+}
 
 async function modifier() {
   const id = props.idVin
@@ -131,13 +132,28 @@ async function modifier() {
         </div>
       </template>
 
+      <h3 class="sous-titre">Profil organoleptique</h3>
+      <ProfilVin :key="`${vin.id_vin}-${detail.degustations.length}`" :fiche="detail" />
+
+      <template v-if="detail.degustations.length">
+        <h3 class="sous-titre">Mes dégustations</h3>
+        <ul class="degustations">
+          <li v-for="d in detail.degustations" :key="d.id_degustation">
+            <span>{{ dateCourte(d.date_degustation) }}</span>
+            <span class="resume-degustation">
+              {{ joindre(d.note === null ? null : `${nombreCourt(d.note)}/20`, d.conclusion) || 'sans note' }}
+              <small v-if="d.commentaire">« {{ d.commentaire }} »</small>
+            </span>
+            <button class="supprimer" :aria-label="`Supprimer la dégustation du ${dateCourte(d.date_degustation)}`" @click="supprimerDegustation(d.id_degustation!)">
+              <Icone nom="fermer" :taille="16" />
+            </button>
+          </li>
+        </ul>
+      </template>
+
       <template v-if="avecProfil.length">
-        <h3 class="sous-titre">Profil organoleptique type</h3>
-        <p class="nuance">D'après {{ avecProfil.length > 1 ? 'les cépages' : 'le cépage' }} — un repère, pas une dégustation.</p>
-        <div class="jauges carte">
-          <JaugeProfil v-for="j in jauges" :key="j.libelle" :libelle="j.libelle" :valeur="j.valeur" />
-        </div>
-        <details v-for="(c, i) in avecProfil" :key="c.nom" class="cepage-profil carte" :open="i === 0">
+        <h3 class="sous-titre">Fiches des cépages</h3>
+        <details v-for="c in avecProfil" :key="c.nom" class="cepage-profil carte">
           <summary>
             <span class="pastille" :class="c.type ?? 'autre'">{{ c.nom }}</span>
             <span class="robe">{{ joindre(c.profil!.robe_couleur, c.profil!.robe_intensite ? `robe ${c.profil!.robe_intensite}` : null) }}</span>
@@ -168,6 +184,9 @@ async function modifier() {
         </p>
       </template>
 
+      <button class="btn btn-large deguster" @click="deguster">
+        <Icone nom="verre" :taille="20" /> Déguster ce vin
+      </button>
       <div class="boutons">
         <button class="btn btn-principal" @click="modifier">
           <Icone nom="crayon" :taille="20" /> Modifier le vin
@@ -270,10 +289,35 @@ async function modifier() {
   background: #e4e0ee;
   color: #4b3f6b;
 }
-.jauges {
+.degustations {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 8px;
+}
+.degustations li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+.resume-degustation {
+  flex: 1;
+  display: grid;
+}
+.resume-degustation small {
+  color: var(--discret);
+  font-style: italic;
+}
+.supprimer {
+  color: var(--discret);
+  padding: 2px;
+}
+.deguster {
+  margin-top: 24px;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .cepage-profil {
   margin-top: 10px;
@@ -322,6 +366,6 @@ async function modifier() {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
   gap: 10px;
-  margin-top: 24px;
+  margin-top: 10px;
 }
 </style>

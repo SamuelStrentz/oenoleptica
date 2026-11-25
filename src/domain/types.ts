@@ -1,5 +1,6 @@
 /** Types partagés entre le worker (base) et l'interface. */
 import type { TypeCepage } from './cepages'
+import type { Degustation, ProfilCalcule } from './profil/types'
 
 export const COULEURS = ['Rouge', 'Blanc', 'Rosé'] as const
 export const FORMATS = ['37,5 cl', '75 cl', '150 cl', '300 cl'] as const
@@ -156,6 +157,12 @@ export interface VinDetail {
   avis: { note: number | null; categorie: string | null }[]
   mouvements: Mouvement[]
   cepages: CepageDuVin[]
+}
+
+/** Fiche complète affichée : détail + profil calculé + dégustations. */
+export interface FicheVin extends VinDetail {
+  profil: ProfilCalcule
+  degustations: Degustation[]
 }
 
 /** Ligne du catalogue d'un vigneron. */

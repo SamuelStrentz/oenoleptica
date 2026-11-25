@@ -3,6 +3,7 @@ import type { SqlDb } from '@/db/sql'
 import { COLONNES_AJOUTEES, CEPAGES_INITIAUX, ORDRES_CREATE, TABLES_REQUISES } from '@/db/schema'
 import { COLONNES_PROFIL, ORDRE_CREATE_PROFILS, PROFILS_INITIAUX } from '@/db/profils-cepages'
 import { cleCepage } from '@/domain/cepages'
+import { ORDRE_CREATE_DEGUSTATIONS } from './degustations'
 
 /** Crée toutes les tables et triggers dans une base vide + cépages usuels et leurs profils. */
 export function creerStructure(db: SqlDb): void {
@@ -11,6 +12,7 @@ export function creerStructure(db: SqlDb): void {
     semerCepages(db)
     db.exec(ORDRE_CREATE_PROFILS)
     semerProfils(db)
+    db.exec(ORDRE_CREATE_DEGUSTATIONS)
   })
 }
 
@@ -73,6 +75,10 @@ export function migrer(db: SqlDb): string[] {
       db.exec(ORDRE_CREATE_PROFILS)
       semerProfils(db)
       faits.push('profils_cepages')
+    }
+    if (!db.tableExiste('degustations')) {
+      db.exec(ORDRE_CREATE_DEGUSTATIONS)
+      faits.push('degustations')
     }
   })
   return faits
