@@ -14,6 +14,11 @@ export function insererVigneron(db: SqlDb, v: NouveauVigneron): number {
   ).lastId
 }
 
+/** Tous les vignerons, fiches complètes (export). */
+export function tousLesVignerons(db: SqlDb): Vigneron[] {
+  return db.all<Vigneron>('SELECT * FROM vignerons ORDER BY nom COLLATE NOCASE, prenom COLLATE NOCASE, id_vigneron')
+}
+
 export function lireVigneron(db: SqlDb, id: number): Vigneron | undefined {
   return db.get<Vigneron>('SELECT * FROM vignerons WHERE id_vigneron = ?', [id])
 }

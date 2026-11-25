@@ -17,7 +17,7 @@ import {
   effacerVin, insererVin, listerCave, lireDetailVin, lireVinCave, majVin, statistiques,
 } from '@/repositories/vins'
 import {
-  catalogueVigneron, compterLiensVigneron, effacerVigneron, insererVigneron, listerVignerons,
+  catalogueVigneron, compterLiensVigneron, effacerVigneron, insererVigneron, listerVignerons, tousLesVignerons,
   lireVigneron, majVigneron,
 } from '@/repositories/vignerons'
 import { lireCepages } from '@/repositories/cepages'
@@ -225,6 +225,7 @@ const api = {
   stats: () => statistiques(base()),
   vignerons: () => listerVignerons(base()),
   vigneron: (id: number) => lireVigneron(base(), id) ?? null,
+  tousLesVignerons: () => tousLesVignerons(base()),
   liensVigneron: (id: number) => compterLiensVigneron(base(), id),
   catalogue: (id: number) => catalogueVigneron(base(), id),
   cepages: () => lireCepages(base()),

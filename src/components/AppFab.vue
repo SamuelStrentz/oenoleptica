@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Bouton central vert.
- *  - Tap court            : ajouter une bouteille (formulaire d'ajout).
+ *  - Tap court            : ajouter une bouteille (ou un vigneron, sur la page Vignerons).
  *  - Appui long + glisser : menu en croix —
  *      ← Vignerons   ↑ Déguster (fiche de dégustation)   → Profil   ↓ Accueil
  *    On relâche sur une direction pour y aller, au centre pour annuler.
@@ -35,6 +35,10 @@ let depart = { x: 0, y: 0 }
 let minuteur: ReturnType<typeof setTimeout> | undefined
 
 const visible = computed(() => !route.meta.formulaire)
+/** Tap court : nouveau vigneron sur la page des vignerons, sinon nouvelle bouteille. */
+const cibleTap = computed(() => (route.path === '/vignerons' ? '/vignerons/nouveau' : '/ajout'))
+const libelleTap = computed(() => (route.path === '/vignerons' ? 'Ajouter un vigneron' : 'Ajouter une bouteille'))
+
 const consigne = computed(() => (cible.value ? ACTIONS[cible.value].libelle : 'Glisse vers une action'))
 
 function ouvrir() {
@@ -74,7 +78,7 @@ function surRelache() {
   const etaitOuvert = ouvert.value
   const choix = cible.value
   reinitialiser()
-  if (!etaitOuvert) aller('/ajout') // tap court : ajouter une bouteille
+  if (!etaitOuvert) aller(cibleTap.value)
   else if (choix) aller(ACTIONS[choix].route)
 }
 
@@ -114,14 +118,14 @@ onBeforeUnmount(() => clearTimeout(minuteur))
     v-show="visible"
     class="fab"
     :class="{ appuye, ouvert }"
-    aria-label="Ajouter une bouteille (appui long : autres actions)"
+    :aria-label="`${libelleTap} (appui long : autres actions)`"
     @pointerdown="surAppui"
     @pointermove="surDeplacement"
     @pointerup="surRelache"
     @pointercancel="reinitialiser"
     @contextmenu.prevent
-    @keydown.enter.prevent="aller('/ajout')"
-    @keydown.space.prevent="aller('/ajout')"
+    @keydown.enter.prevent="aller(cibleTap)"
+    @keydown.space.prevent="aller(cibleTap)"
   >
     <Icone nom="plus" :taille="32" />
   </button>

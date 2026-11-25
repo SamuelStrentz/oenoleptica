@@ -163,6 +163,10 @@ onMounted(async () => {
           @ouvrir="vinOuvert = vin.id_vin"
         />
       </TransitionGroup>
+      <p v-else-if="store.filtre === 'en-stock' && !store.recherche" class="vide">
+        Aucune bouteille en cave pour l'instant.<br />
+        <button class="lien" @click="store.filtre = 'tous'">Voir tous les vins</button>
+      </p>
       <p v-else class="vide">Aucun vin ne correspond.</p>
     </template>
 

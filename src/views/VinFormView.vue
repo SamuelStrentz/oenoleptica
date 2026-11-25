@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
 import CepageChips from '@/components/CepageChips.vue'
 import VigneronChamps from '@/components/VigneronChamps.vue'
+import ChampListe, { type OptionListe } from '@/components/ChampListe.vue'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore, vibrer } from '@/stores/ui'
 import { COULEURS, FORMATS, type AjoutVin, type ChampsVin } from '@/domain/types'
@@ -39,7 +40,22 @@ const champEnErreur = ref<string | null>(null)
 const enCours = ref(false)
 const charge = ref(!props.id)
 
-const domaines = computed(() => uniques(store.vins.map((v) => v.domaine)))
+/** Domaines déjà en base, avec leur nombre de vins et leur(s) appellation(s). */
+const domaines = computed<OptionListe[]>(() => {
+  const parDomaine = new Map<string, { n: number; appellations: Set<string> }>()
+  for (const v of store.vins) {
+    const d = parDomaine.get(v.domaine) ?? { n: 0, appellations: new Set<string>() }
+    d.n++
+    if (v.appellation) d.appellations.add(v.appellation)
+    parDomaine.set(v.domaine, d)
+  }
+  return [...parDomaine]
+    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+    .map(([valeur, d]) => ({
+      valeur,
+      detail: [pluriel(d.n, 'vin'), [...d.appellations].slice(0, 2).join(', ')].filter(Boolean).join(' · '),
+    }))
+})
 const appellations = computed(() => uniques(store.vins.map((v) => v.appellation)))
 
 onMounted(async () => {
@@ -179,10 +195,17 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
 
     <form v-if="charge" @submit.prevent="enregistrer">
       <section class="carte">
-        <label class="champ" :class="erreur('domaine')">
+        <div class="champ" :class="erreur('domaine')">
           <span>Domaine *</span>
-          <input v-model="f.domaine" name="domaine" list="liste-domaines" autocapitalize="sentences" autocomplete="off" @change="surDomaine" />
-        </label>
+          <ChampListe
+            v-model="f.domaine"
+            name="domaine"
+            :options="domaines"
+            titre-liste="Domaines de ta cave"
+            @choisi="surDomaine"
+            @change="surDomaine"
+          />
+        </div>
         <div class="ligne-2">
           <label class="champ" :class="erreur('millesime')">
             <span>Millésime</span>
@@ -291,7 +314,6 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
         </button>
       </section>
 
-      <datalist id="liste-domaines"><option v-for="d in domaines" :key="d" :value="d" /></datalist>
       <datalist id="liste-appellations"><option v-for="a in appellations" :key="a" :value="a" /></datalist>
       <datalist id="liste-categories"><option v-for="c in store.categories" :key="c" :value="c" /></datalist>
 

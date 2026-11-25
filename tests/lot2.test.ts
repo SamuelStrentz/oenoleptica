@@ -111,3 +111,23 @@ describe('dégustations', () => {
     expect(db.valeur('SELECT COUNT(*) FROM degustations')).toBe(0)
   })
 })
+
+describe('export SQL des vignerons', () => {
+  it('script rejouable, apostrophes protégées, sans doublon', async () => {
+    const { vigneronsEnSql } = await import('@/domain/export-sql')
+    const { tousLesVignerons } = await import('@/repositories/vignerons')
+    const source = nouvelleBase()
+    insererVigneron(source, { ...vigneron("D'Arenberg"), prenom: 'Chester', mail: null })
+    insererVigneron(source, { ...vigneron('Aubert'), prenom: null })
+    const sql = vigneronsEnSql(tousLesVignerons(source))
+    expect(sql).toContain("'D''Arenberg'")
+    const cible = nouvelleBase()
+    insererVigneron(cible, { ...vigneron('Aubert'), prenom: null }) // déjà présent
+    cible.exec(sql)
+    cible.exec(sql) // rejoué : rien de plus
+    expect(cible.all('SELECT prenom, nom, ville, region FROM vignerons ORDER BY nom')).toEqual([
+      { prenom: null, nom: 'Aubert', ville: 'Aubenas', region: 'Rhône-Alpes' },
+      { prenom: 'Chester', nom: "D'Arenberg", ville: 'Aubenas', region: 'Rhône-Alpes' },
+    ])
+  })
+})

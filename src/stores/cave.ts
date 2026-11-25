@@ -21,7 +21,7 @@ export const useCaveStore = defineStore('cave', () => {
   const cepages = ref<Cepages>({})
   const categories = ref<string[]>([])
   const stats = ref<Statistiques | null>(null)
-  const filtre = ref<Filtre>('tous')
+  const filtre = ref<Filtre>('en-stock')
   const recherche = ref('')
   /** id du dernier vin ajouté / modifié (mis en avant sur l'accueil). */
   const dernierVin = ref<number | null>(null)
@@ -68,7 +68,7 @@ export const useCaveStore = defineStore('cave', () => {
   async function changerDeCave(info: InfoStockage) {
     appliquer(info)
     recherche.value = ''
-    filtre.value = 'tous'
+    filtre.value = 'en-stock'
     dernierVin.value = null
     if (prete.value) {
       await demanderPersistance()
@@ -123,6 +123,8 @@ export const useCaveStore = defineStore('cave', () => {
   async function ajouterVin(d: AjoutVin) {
     const vin = await api.ajouterVin(d)
     dernierVin.value = vin.id_vin
+    // un vin ajouté sans bouteille resterait invisible dans « En cave »
+    if (vin.quantite === 0 && filtre.value === 'en-stock') filtre.value = 'tous'
     await recharger()
     apresEcriture()
     return vin
@@ -195,7 +197,7 @@ export const useCaveStore = defineStore('cave', () => {
     ajouterVigneron, modifierVigneron, supprimerVigneron,
     // lectures ponctuelles (pas d'état partagé)
     detailVin: api.detailVin, historique: api.historique, catalogue: api.catalogue,
-    vigneron: api.vigneron, liensVigneron: api.liensVigneron,
+    vigneron: api.vigneron, liensVigneron: api.liensVigneron, tousLesVignerons: api.tousLesVignerons,
   }
 })
 

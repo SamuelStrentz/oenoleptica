@@ -1,9 +1,16 @@
 <script setup lang="ts">
-/** Vignerons : liste, fiche, ajout. */
+/** Vignerons : liste, fiche (tap), export SQL (appui long). */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
 import VigneronSheet from '@/components/VigneronSheet.vue'
+import BottomSheet from '@/components/BottomSheet.vue'
+import { useAppuiLong } from '@/composables/useAppuiLong'
+import { useUiStore } from '@/stores/ui'
+import { vigneronsEnSql } from '@/domain/export-sql'
+import { aujourdhui } from '@/domain/parsers'
+import { nomFichier, partagerOuTelecharger } from '@/utils/fichiers'
+import { apresPanneau } from '@/utils/panneaux'
 import type { VigneronListe } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { joindre, pluriel } from '@/utils/affichage'
@@ -11,6 +18,25 @@ import { joindre, pluriel } from '@/utils/affichage'
 const router = useRouter()
 const store = useCaveStore()
 const ouvert = ref<VigneronListe | null>(null)
+const menu = ref<VigneronListe | null>(null)
+const ui = useUiStore()
+const appui = useAppuiLong()
+
+/** Exporte un vigneron (ou tous) en script SQL, puis ouvre le menu de partage. */
+async function exporter(seul: VigneronListe | null) {
+  menu.value = null
+  try {
+    const tous = await store.tousLesVignerons()
+    const choisis = seul ? tous.filter((v) => v.id_vigneron === seul.id_vigneron) : tous
+    const sql = vigneronsEnSql(choisis)
+    const nom = seul ? `vigneron_${nomFichier(seul.libelle)}` : `vignerons_${nomFichier(store.nomCave)}`
+    await apresPanneau()
+    await partagerOuTelecharger(new Blob([sql], { type: 'text/plain' }), `${nom}_${aujourdhui()}.sql`,
+      seul ? `Vigneron ${seul.libelle}` : `${choisis.length} vignerons`)
+  } catch (e) {
+    ui.erreur(e)
+  }
+}
 
 function initiales(libelle: string) {
   return libelle
@@ -26,9 +52,6 @@ function initiales(libelle: string) {
     <header class="barre">
       <button class="bouton-icone" aria-label="Retour" @click="router.back()"><Icone nom="retour" /></button>
       <h1>Vignerons</h1>
-      <button class="bouton-icone" aria-label="Ajouter un vigneron" @click="router.push('/vignerons/nouveau')">
-        <Icone nom="plus" />
-      </button>
     </header>
 
     <ul v-if="store.vignerons.length" class="liste">
@@ -38,7 +61,8 @@ function initiales(libelle: string) {
         class="carte vigneron"
         role="button"
         tabindex="0"
-        @click="ouvert = v"
+        v-on="appui.ecouteurs(() => (menu = v))"
+        @click="appui.clicNormal() && (ouvert = v)"
         @keydown.enter="ouvert = v"
       >
         <span class="avatar">{{ initiales(v.libelle) }}</span>
@@ -53,8 +77,22 @@ function initiales(libelle: string) {
         </div>
       </li>
     </ul>
-    <p v-else class="vide">Aucun vigneron pour l'instant.<br />Touche + en haut à droite pour en ajouter un.</p>
+    <p v-else class="vide">Aucun vigneron pour l'instant.<br />Touche le + vert pour en ajouter un.</p>
+    <p v-if="store.vignerons.length" class="astuce">Appui long sur un vigneron pour l'exporter.</p>
     <VigneronSheet :resume="ouvert" @fermer="ouvert = null" />
+
+    <BottomSheet :ouvert="menu !== null" titre="Exporter" @fermer="menu = null">
+      <div v-if="menu" class="menu-export">
+        <h2>{{ menu.libelle }}</h2>
+        <p>Export en script SQL : la personne qui le reçoit l'exécute pour créer le(s) vigneron(s) dans sa base.</p>
+        <button class="btn btn-principal btn-large" @click="exporter(menu)">
+          <Icone nom="partager" :taille="20" /> Exporter ce vigneron
+        </button>
+        <button class="btn btn-large" @click="exporter(null)">
+          <Icone nom="partager" :taille="20" /> Exporter tous les vignerons ({{ store.vignerons.length }})
+        </button>
+      </div>
+    </BottomSheet>
   </main>
 </template>
 
@@ -68,6 +106,9 @@ function initiales(libelle: string) {
 }
 .vigneron {
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -112,5 +153,24 @@ function initiales(libelle: string) {
 .compte span {
   font-size: 0.78rem;
   color: var(--discret);
+}
+.astuce {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--discret);
+  margin-top: 14px;
+}
+.menu-export {
+  display: grid;
+  gap: 10px;
+}
+.menu-export h2 {
+  font-size: 1.3rem;
+}
+.menu-export p {
+  margin: 0 0 6px;
+  color: var(--discret);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 </style>

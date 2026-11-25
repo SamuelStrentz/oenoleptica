@@ -20,6 +20,11 @@ const opaciteVoile = computed(() =>
 // Chaque panneau ouvert ajoute une entrée d'historique numérotée (niveau) :
 // le bouton retour ferme seulement le panneau du dessus.
 let niveau = 0
+// Ouvert par un appui long, le doigt se relève sur le voile : ce « clic » ne doit pas le refermer
+let ouvertA = 0
+function surVoile() {
+  if (Date.now() - ouvertA > 450) emit('fermer')
+}
 const niveauCourant = () => (history.state?.panneau as number | undefined) ?? 0
 
 function surRetour() {
@@ -30,6 +35,7 @@ watch(
   () => props.ouvert,
   (o) => {
     if (o) {
+      ouvertA = Date.now()
       niveau = niveauCourant() + 1
       history.pushState({ ...history.state, panneau: niveau }, '')
       window.addEventListener('popstate', surRetour)
@@ -49,7 +55,7 @@ onBeforeUnmount(() => window.removeEventListener('popstate', surRetour))
         v-if="ouvert"
         class="fond"
         :style="{ backgroundColor: `rgb(43 35 38 / ${45 * opaciteVoile}%)` }"
-        @click.self="emit('fermer')"
+        @click.self="surVoile"
       >
         <section ref="panneau" class="panneau" role="dialog" aria-modal="true" :aria-label="titre">
           <div class="languette" data-languette aria-hidden="true"><div class="poignee" /></div>

@@ -6,7 +6,8 @@ import { couleurPastille, joindre } from '@/utils/affichage'
 const props = defineProps<{ vin: VinCave; recent?: boolean }>()
 defineEmits<{ stock: []; ouvrir: [] }>()
 
-const detail = computed(() => joindre(props.vin.cuvee, props.vin.cru))
+// cuvée · cru ; à défaut, le cépage
+const detail = computed(() => joindre(props.vin.cuvee, props.vin.cru) || props.vin.cepage)
 </script>
 
 <template>
