@@ -1,0 +1,90 @@
+import { describe, expect, it } from 'vitest'
+import { nouvelleBase, vin } from './aide'
+import { CEPAGES_INITIAUX } from '@/db/schema'
+import { PROFILS_INITIAUX } from '@/db/profils-cepages'
+import { insererVin, lireDetailVin, majVin } from '@/repositories/vins'
+import { historique, reglerStock } from '@/repositories/stock'
+import {
+  catalogueVigneron, compterLiensVigneron, effacerVigneron, insererVigneron, lireVigneron, majVigneron,
+} from '@/repositories/vignerons'
+import { definirAvis } from '@/repositories/avis'
+import { ancienneRegion, ANCIENNES_REGIONS } from '@/domain/regions'
+
+const vigneron = (nom: string) => ({
+  prenom: null, nom, mail: null, adresse: null, cp: '07200', ville: 'Aubenas',
+  departement: 'Ardèche', region: 'Rhône-Alpes', pays: 'France',
+})
+
+describe('profils organoleptiques', () => {
+  it('chaque cépage usuel a un profil type', () => {
+    const sansProfil = CEPAGES_INITIAUX.map(([n]) => n).filter((n) => !PROFILS_INITIAUX[n])
+    expect(sansProfil).toEqual([])
+    const db = nouvelleBase()
+    expect(db.valeur('SELECT COUNT(*) FROM profils_cepages')).toBe(CEPAGES_INITIAUX.length)
+  })
+
+  it('fiche vin : cépages avec type et profil, y compris un cépage inconnu', () => {
+    const db = nouvelleBase()
+    const id = insererVin(db, vin({ cepage: 'syrah, Grenache, Cépage mystère', quantite: 2, note: 15 }))
+    const d = lireDetailVin(db, id)
+    expect(d.cepages.map((c) => [c.nom, c.type, c.profil?.tanins ?? null])).toEqual([
+      ['syrah', 'rouge', 4], ['Grenache', 'rouge', 2], ['Cépage mystère', 'rouge', null],
+    ])
+    expect(d.mouvements).toHaveLength(1)
+    expect(d.avis).toEqual([{ note: 15, categorie: null }])
+  })
+})
+
+describe('modification', () => {
+  it('majVin + definirAvis', () => {
+    const db = nouvelleBase()
+    const id = insererVin(db, vin())
+    majVin(db, id, null, { ...vin(), domaine: 'Autre domaine', prix: 22 })
+    definirAvis(db, id, 17, 'Garde')
+    const d = lireDetailVin(db, id)
+    expect(d.vin).toMatchObject({ domaine: 'Autre domaine', prix: 22, note: 17, categories: 'Garde' })
+  })
+})
+
+describe('historique', () => {
+  it('entrées et sorties, les plus récentes d’abord, avec le vin', () => {
+    const db = nouvelleBase()
+    const id = insererVin(db, vin({ quantite: 6 }), '2026-10-01')
+    reglerStock(db, id, 4, '2026-11-20')
+    const h = historique(db)
+    expect(h.map((m) => [m.date_mouvement, m.type_mouvement, m.quantite_mouvement, m.domaine, m.prix])).toEqual([
+      ['2026-11-20', 'sortie', 2, 'Domaine Gramenon', 18.5],
+      ['2026-10-01', 'entrée', 6, 'Domaine Gramenon', 18.5],
+    ])
+  })
+})
+
+describe('vignerons', () => {
+  it('modifier, catalogue, supprimer en cascade', () => {
+    const db = nouvelleBase()
+    const g = insererVigneron(db, vigneron('Aubert'))
+    majVigneron(db, g, { ...vigneron('Aubert'), prenom: 'Michèle', mail: 'm@exemple.fr' })
+    expect(lireVigneron(db, g)).toMatchObject({ prenom: 'Michèle', mail: 'm@exemple.fr' })
+    const a = insererVin(db, vin({ vigneron_id: g, millesime: 2022, quantite: 3, note: 14 }))
+    insererVin(db, vin({ vigneron_id: g, millesime: 2020 }))
+    expect(catalogueVigneron(db, g).map((l) => [l.millesime, l.quantite])).toEqual([[2020, 0], [2022, 3]])
+    expect(compterLiensVigneron(db, g)).toEqual({ vins: 2, stock: 3, avis: 1, mouvements: 1 })
+    effacerVigneron(db, g)
+    expect(db.valeur('SELECT COUNT(*) FROM vins')).toBe(0)
+    expect(db.valeur('SELECT COUNT(*) FROM stock WHERE id_vin = ?', [a])).toBe(0)
+  })
+})
+
+describe('anciennes régions', () => {
+  it('96 départements métropolitains + DOM', () => {
+    expect(ancienneRegion('07')).toBe('Rhône-Alpes')
+    expect(ancienneRegion('64')).toBe('Aquitaine')
+    expect(ancienneRegion('2a')).toBe('Corse')
+    expect(ancienneRegion('974')).toBe('La Réunion')
+    expect(ancienneRegion('99')).toBeNull()
+    const metro = Array.from({ length: 95 }, (_, i) => String(i + 1).padStart(2, '0'))
+      .filter((d) => d !== '20').concat(['2A', '2B'])
+    expect(metro.filter((d) => !ancienneRegion(d))).toEqual([])
+    expect(ANCIENNES_REGIONS).toHaveLength(27)
+  })
+})
