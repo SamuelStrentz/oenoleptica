@@ -125,6 +125,24 @@ function sansWal(octets: Uint8Array): Uint8Array {
   return copie
 }
 
+/** Vérifie qu'un fichier .db est bien une cave, dans un emplacement temporaire. */
+async function controler(octets: Uint8Array): Promise<Uint8Array> {
+  if (!pool) throw new Error("Le stockage du navigateur n'est pas disponible : import impossible.")
+  const propres = sansWal(octets)
+  await pool.importDb(chemin(FICHIER_IMPORT), propres)
+  try {
+    const essai = connecter(FICHIER_IMPORT)
+    try {
+      verifierStructure(essai)
+    } finally {
+      essai.brute.close()
+    }
+  } finally {
+    pool.unlink(chemin(FICHIER_IMPORT))
+  }
+  return propres
+}
+
 const api = {
   /** Démarre le moteur et rouvre la dernière cave utilisée (ou la première trouvée). */
   async demarrer(fichierPrefere?: string | null): Promise<InfoStockage> {
@@ -163,26 +181,24 @@ const api = {
 
   /** Ajoute une cave à partir d'un fichier .db (sans toucher aux autres) et l'ouvre. */
   async importerCave(octets: Uint8Array, nom: string): Promise<InfoStockage> {
-    if (!pool) throw new Error("Le stockage du navigateur n'est pas disponible : import impossible.")
     let fichier = fichierDeNom(nom)
     for (let i = 2; existe(fichier); i++) fichier = fichierDeNom(`${nom} (${i})`)
     await prevoirPlace()
-    const propres = sansWal(octets)
-    // 1. contrôle du fichier dans un emplacement temporaire
-    await pool.importDb(chemin(FICHIER_IMPORT), propres)
-    try {
-      const essai = connecter(FICHIER_IMPORT)
-      try {
-        verifierStructure(essai)
-      } finally {
-        essai.brute.close()
-      }
-    } finally {
-      pool.unlink(chemin(FICHIER_IMPORT))
-    }
-    // 2. ajout de la nouvelle cave
+    const propres = await controler(octets)
     fermer()
-    await pool.importDb(chemin(fichier), propres)
+    await pool!.importDb(chemin(fichier), propres)
+    ouvrir(fichier)
+    return info()
+  },
+
+  /** Remplace le contenu de la cave ouverte (version plus récente trouvée dans le dossier local). */
+  async remplacerCave(octets: Uint8Array): Promise<InfoStockage> {
+    const fichier = fichierCourant
+    if (!fichier) throw new Error("Aucune cave n'est ouverte.")
+    const propres = await controler(octets)
+    fermer()
+    pool!.unlink(chemin(fichier))
+    await pool!.importDb(chemin(fichier), propres)
     ouvrir(fichier)
     return info()
   },

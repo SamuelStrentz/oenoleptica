@@ -26,6 +26,9 @@ export interface VinCave {
   categories: string | null
 }
 
+/** Le minimum pour afficher / modifier le stock d'un vin. */
+export type VinStock = Pick<VinCave, 'id_vin' | 'domaine' | 'millesime' | 'appellation' | 'cuvee' | 'cru' | 'couleur' | 'quantite'>
+
 export interface Vigneron {
   id_vigneron: number
   prenom: string | null

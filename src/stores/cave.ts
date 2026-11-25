@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { cave as api } from '@/db/client'
+import { useDossierStore } from './dossier'
 import type {
   AjoutVin, Cepages, ChampsVin, InfoStockage, NouveauVigneron, Statistiques, VigneronListe, VinCave,
 } from '@/domain/types'
@@ -71,6 +72,7 @@ export const useCaveStore = defineStore('cave', () => {
     if (prete.value) {
       await demanderPersistance()
       await recharger()
+      await useDossierStore().verifierCaveCourante()
     } else {
       vins.value = []
       vignerons.value = []
@@ -96,8 +98,20 @@ export const useCaveStore = defineStore('cave', () => {
   async function importer(fichier: File) {
     const octets = new Uint8Array(await fichier.arrayBuffer())
     const nom = fichier.name.replace(/\.(db|sqlite3?)$/i, '') || 'Cave importée'
-    await changerDeCave(await api.importerCave(octets, nom))
+    await importerOctets(octets, nom)
   }
+
+  const importerOctets = async (octets: Uint8Array, nom: string) =>
+    changerDeCave(await api.importerCave(octets, nom))
+
+  /** Remplace le contenu de la cave ouverte (version du dossier local). */
+  async function remplacer(octets: Uint8Array) {
+    appliquer(await api.remplacerCave(octets))
+    await recharger()
+  }
+
+  /** Après chaque écriture : copie différée dans le dossier local. */
+  const apresEcriture = () => useDossierStore().planifier()
 
   async function exporter(): Promise<Blob> {
     const octets = await api.exporterCave()
@@ -109,6 +123,7 @@ export const useCaveStore = defineStore('cave', () => {
     const vin = await api.ajouterVin(d)
     dernierVin.value = vin.id_vin
     await recharger()
+    apresEcriture()
     return vin
   }
 
@@ -118,12 +133,14 @@ export const useCaveStore = defineStore('cave', () => {
     const vin = await api.modifierVin(idVin, idVigneron, champs, note, categorie)
     dernierVin.value = vin.id_vin
     await recharger()
+    apresEcriture()
     return vin
   }
 
   async function supprimerVin(idVin: number) {
     await api.supprimerVin(idVin)
     await recharger()
+    apresEcriture()
   }
 
   async function reglerStock(idVin: number, cible: number) {
@@ -131,6 +148,7 @@ export const useCaveStore = defineStore('cave', () => {
     const i = vins.value.findIndex((v) => v.id_vin === idVin)
     if (i >= 0) vins.value[i] = vin
     stats.value = await api.stats()
+    apresEcriture()
     return vin
   }
 
@@ -138,23 +156,26 @@ export const useCaveStore = defineStore('cave', () => {
   async function ajouterVigneron(v: NouveauVigneron) {
     const id = await api.ajouterVigneron(v)
     await recharger()
+    apresEcriture()
     return id
   }
 
   async function modifierVigneron(id: number, v: NouveauVigneron) {
     await api.modifierVigneron(id, v)
     await recharger()
+    apresEcriture()
   }
 
   async function supprimerVigneron(id: number) {
     await api.supprimerVigneron(id)
     await recharger()
+    apresEcriture()
   }
 
   return {
     chargement, erreur, stockage, vins, vignerons, cepages, categories, stats, filtre, recherche,
     dernierVin, prete, nomCave, totalBouteilles, vinsAffiches,
-    demarrer, recharger, creer, ouvrir, importer, exporter, supprimer,
+    demarrer, recharger, creer, ouvrir, importer, importerOctets, remplacer, exporter, supprimer,
     ajouterVin, modifierVin, supprimerVin, reglerStock,
     ajouterVigneron, modifierVigneron, supprimerVigneron,
     // lectures ponctuelles (pas d'état partagé)

@@ -19,6 +19,8 @@ export const CHEMINS = {
   corbeille: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   installer: 'M12 3v12M7 10l5 5 5-5M4 21h16',
   coche: 'M5 12l5 5 9-10',
+  dossier: 'M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1z',
+  synchro: 'M4 12a8 8 0 0114-5.3L20 9M20 4v5h-5M20 12a8 8 0 01-14 5.3L4 15M4 20v-5h5',
   crayon: 'M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4',
   catalogue: 'M4 5h16M4 10h16M4 15h10M4 20h7',
   historique: 'M3 12a9 9 0 103-6.7M3 4v4h4M12 7v5l3 2',

@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
 import VinDetailSheet from '@/components/VinDetailSheet.vue'
+import StockSheet from '@/components/StockSheet.vue'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
 import type { LigneCatalogue, Vigneron } from '@/domain/types'
@@ -20,6 +21,7 @@ const ui = useUiStore()
 const vigneron = ref<Vigneron | null>(null)
 const lignes = ref<LigneCatalogue[]>([])
 const vinOuvert = ref<number | null>(null)
+const vinStock = ref<LigneCatalogue | null>(null)
 
 async function charger() {
   try {
@@ -96,7 +98,16 @@ async function fermerFiche() {
               </td>
               <td class="cepage">{{ l.cepage }}</td>
               <td class="nombre">{{ formaterPrix(l.prix) }}</td>
-              <td class="nombre"><span class="badge" :class="{ vide: l.quantite === 0 }">{{ l.quantite }}</span></td>
+              <td class="nombre">
+                <button
+                  class="badge"
+                  :class="{ vide: l.quantite === 0 }"
+                  :aria-label="`${l.quantite} en stock — modifier`"
+                  @click.stop="vinStock = l"
+                >
+                  {{ l.quantite }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -109,6 +120,7 @@ async function fermerFiche() {
     </template>
 
     <VinDetailSheet :id-vin="vinOuvert" @fermer="fermerFiche" />
+    <StockSheet :vin="vinStock" @fermer="vinStock = null" @modifie="charger" />
   </main>
 </template>
 
@@ -164,6 +176,10 @@ small {
 .cepage {
   font-size: 0.82rem;
   color: var(--discret);
+}
+button.badge {
+  min-height: 28px;
+  padding: 3px 10px;
 }
 .exporter {
   margin-top: 20px;

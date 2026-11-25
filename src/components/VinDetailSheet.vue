@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import BottomSheet from './BottomSheet.vue'
 import Icone from './Icone.vue'
 import JaugeProfil from './JaugeProfil.vue'
+import StockSheet from './StockSheet.vue'
 import type { ProfilOrganoleptique, VinDetail } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
@@ -20,18 +21,24 @@ const router = useRouter()
 const store = useCaveStore()
 const ui = useUiStore()
 const detail = ref<VinDetail | null>(null)
+const stockOuvert = ref(false)
+
+async function charger(id: number | null) {
+  if (id === null) return
+  try {
+    detail.value = await store.detailVin(id)
+  } catch (e) {
+    ui.erreur(e)
+    emit('fermer')
+  }
+}
 
 watch(
   () => props.idVin,
-  async (id) => {
+  (id) => {
     detail.value = null
-    if (id === null) return
-    try {
-      detail.value = await store.detailVin(id)
-    } catch (e) {
-      ui.erreur(e)
-      emit('fermer')
-    }
+    stockOuvert.value = false
+    charger(id)
   },
   { immediate: true },
 )
@@ -161,11 +168,17 @@ async function modifier() {
         </p>
       </template>
 
-      <button class="btn btn-principal btn-large modifier" @click="modifier">
-        <Icone nom="crayon" :taille="20" /> Modifier les informations du vin
-      </button>
+      <div class="boutons">
+        <button class="btn btn-principal" @click="modifier">
+          <Icone nom="crayon" :taille="20" /> Modifier le vin
+        </button>
+        <button class="btn btn-vert" @click="stockOuvert = true">
+          <Icone nom="bouteille" :taille="20" /> Stock ({{ vin.quantite }})
+        </button>
+      </div>
     </template>
   </BottomSheet>
+  <StockSheet :vin="stockOuvert ? vin ?? null : null" @fermer="stockOuvert = false" @modifie="charger(idVin)" />
 </template>
 
 <style scoped>
@@ -305,7 +318,10 @@ async function modifier() {
   align-items: center;
   font-size: 0.9rem;
 }
-.modifier {
+.boutons {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
   margin-top: 24px;
 }
 </style>

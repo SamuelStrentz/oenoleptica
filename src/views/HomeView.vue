@@ -3,6 +3,7 @@
 import { nextTick, onMounted, ref } from 'vue'
 import { useCaveStore, type Filtre } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
+import { useDossierStore } from '@/stores/dossier'
 import VinCard from '@/components/VinCard.vue'
 import StockSheet from '@/components/StockSheet.vue'
 import VinDetailSheet from '@/components/VinDetailSheet.vue'
@@ -13,6 +14,7 @@ import { pluriel } from '@/utils/affichage'
 
 const store = useCaveStore()
 const ui = useUiStore()
+const dossier = useDossierStore()
 const vinStock = ref<VinCave | null>(null)
 const vinOuvert = ref<number | null>(null)
 const creation = ref(false)
@@ -52,6 +54,26 @@ async function importer(e: Event) {
   }
 }
 
+async function choisirDossier() {
+  try {
+    await dossier.choisir()
+  } catch (e) {
+    if ((e as Error).name !== 'AbortError') ui.erreur(e)
+  }
+}
+
+async function ouvrirDuDossier(nom: string) {
+  creation.value = true
+  try {
+    await dossier.ouvrirDepuisDossier(nom)
+    ui.toast(`Cave « ${nom} » ouverte`)
+  } catch (e) {
+    ui.erreur(e)
+  } finally {
+    creation.value = false
+  }
+}
+
 // Après un ajout : on fait défiler jusqu'au nouveau vin
 onMounted(async () => {
   if (!store.dernierVin) return
@@ -68,8 +90,30 @@ onMounted(async () => {
       <img :src="logo" alt="" width="96" height="96" />
       <h1>Œnoleptica</h1>
       <p>Ta cave à vin, dans ta poche. Touche le bouton du bas pour créer ta première cave : elle est rangée sur ton téléphone.</p>
+      <section v-if="dossier.etat !== 'non-supporte'" class="dossier">
+        <strong><Icone nom="dossier" :taille="18" /> Dossier de l'appli</strong>
+        <template v-if="dossier.etat === 'aucun'">
+          <span>Choisis (ou crée) un dossier, par exemple <em>Documents/Œnoleptica</em>. Tes caves y seront enregistrées en <code>.db</code>, dans « db ».</span>
+          <button class="btn btn-principal" @click="choisirDossier">Choisir le dossier</button>
+        </template>
+        <template v-else-if="dossier.etat === 'a-autoriser'">
+          <span>Autorise de nouveau l'accès au dossier « {{ dossier.nom }} ».</span>
+          <button class="btn btn-principal" @click="dossier.autoriser()">Autoriser</button>
+        </template>
+        <template v-else>
+          <span class="chemin">{{ dossier.nom }}/db</span>
+          <ul v-if="dossier.fichiers.length" class="fichiers">
+            <li v-for="f in dossier.fichiers" :key="f.nom">
+              <button class="btn" :disabled="creation" @click="ouvrirDuDossier(f.nom)">
+                <Icone nom="cave" :taille="18" /> Ouvrir « {{ f.nom }} »
+              </button>
+            </li>
+          </ul>
+          <span v-else>Aucune cave dans ce dossier pour l'instant : crée la première avec le bouton du bas.</span>
+        </template>
+      </section>
       <button class="lien" :disabled="creation" @click="fichier?.click()">
-        <Icone nom="importer" :taille="18" /> J'ai déjà une base (.db)
+        <Icone nom="importer" :taille="18" /> Ouvrir un .db d'un autre emplacement
       </button>
       <input ref="fichier" type="file" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/vnd.sqlite3,application/x-sqlite3" hidden @change="importer" />
     </div>
@@ -164,6 +208,43 @@ onMounted(async () => {
   margin: 0;
   color: var(--discret);
   line-height: 1.5;
+}
+.dossier {
+  width: 100%;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: var(--rayon);
+  background: var(--carte);
+  box-shadow: var(--ombre);
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.dossier strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+.dossier > span {
+  color: var(--discret);
+  line-height: 1.45;
+}
+.dossier .chemin {
+  font-family: monospace;
+  color: var(--texte);
+}
+.fichiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.fichiers .btn {
+  width: 100%;
+  justify-content: flex-start;
 }
 .lien {
   display: inline-flex;

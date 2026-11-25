@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /** Profil : mes caves (créer / ouvrir), chiffres, sauvegarde, installation. */
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
+import { useDossierStore } from '@/stores/dossier'
 import { aujourdhui, formaterPrix } from '@/domain/parsers'
 import { pluriel } from '@/utils/affichage'
 import { nomFichier, partagerOuTelecharger } from '@/utils/fichiers'
@@ -18,6 +19,7 @@ interface InstallEvent extends Event {
 const router = useRouter()
 const store = useCaveStore()
 const ui = useUiStore()
+const dossier = useDossierStore()
 const fichier = ref<HTMLInputElement>()
 const persistee = ref<boolean | null>(null)
 const installation = ref<InstallEvent | null>(null)
@@ -41,6 +43,33 @@ onBeforeUnmount(() => window.removeEventListener('beforeinstallprompt', surInsta
 async function installer() {
   await installation.value?.prompt()
   installation.value = null
+}
+
+// ------------------------------------------------------- dossier local
+/** Caves présentes dans le dossier mais pas encore sur le téléphone. */
+const cavesDuDossier = computed(() => {
+  const internes = new Set((store.stockage?.caves ?? []).map((c) => c.nom))
+  return dossier.fichiers.filter((f) => !internes.has(f.nom))
+})
+
+const derniereCopie = computed(() =>
+  dossier.derniereCopie
+    ? dossier.derniereCopie.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    : null,
+)
+
+async function agir(fn: () => Promise<unknown>, ok?: string) {
+  try {
+    await fn()
+    if (ok) ui.toast(ok)
+  } catch (e) {
+    if ((e as Error).name !== 'AbortError') ui.erreur(e)
+  }
+}
+
+async function ouvrirDuDossier(nom: string) {
+  await agir(() => dossier.ouvrirDepuisDossier(nom), `Cave « ${nom} » ouverte`)
+  if (store.nomCave === nom) router.push('/')
 }
 
 // --------------------------------------------------------------- caves
@@ -99,10 +128,12 @@ async function exporter() {
 
 async function supprimer() {
   const nom = store.nomCave
-  if (!confirm(`Supprimer définitivement la cave « ${nom} » de ce téléphone ?\n\nCette action est irréversible.`)) return
+  const aussiDossier = dossier.etat === 'pret' ? `\n\nSon fichier « ${nom}.db » sera aussi supprimé du dossier « ${dossier.nom} ».` : ''
+  if (!confirm(`Supprimer définitivement la cave « ${nom} » ?${aussiDossier}\n\nCette action est irréversible.`)) return
   if (!confirm(`Dernière confirmation : ${pluriel(store.vins.length, 'vin')} vont être effacés.`)) return
   try {
     await store.supprimer()
+    await dossier.supprimerFichier(nom)
     ui.toast(`Cave « ${nom} » supprimée`)
     router.replace('/')
   } catch (e) {
@@ -135,23 +166,65 @@ async function supprimer() {
             <small v-if="c.fichier === store.stockage?.cave?.fichier">ouverte</small>
           </button>
         </li>
+        <li v-for="f in cavesDuDossier" :key="'dossier-' + f.nom">
+          <button @click="ouvrirDuDossier(f.nom)">
+            <Icone nom="dossier" :taille="20" />
+            <span>{{ f.nom }}</span>
+            <small>dans le dossier</small>
+          </button>
+        </li>
       </ul>
       <div class="actions">
         <button class="btn btn-large" @click="demanderNom">
           <Icone nom="plus" :taille="20" /> Créer une nouvelle cave
         </button>
         <button class="btn btn-large" @click="fichier?.click()">
-          <Icone nom="importer" :taille="20" /> Ouvrir une cave (.db)
+          <Icone nom="importer" :taille="20" /> Ouvrir un .db d'un autre emplacement
         </button>
       </div>
       <input ref="fichier" type="file" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/vnd.sqlite3,application/x-sqlite3" hidden @change="importer" />
     </section>
 
+    <h2 class="section-titre">Dossier local</h2>
+    <section class="carte actions">
+      <template v-if="dossier.etat === 'non-supporte'">
+        <p class="aide">Ce navigateur ne permet pas de lier un dossier. Utilise Chrome à jour sur Android.</p>
+      </template>
+      <template v-else-if="dossier.etat === 'aucun'">
+        <p class="aide">
+          Choisis un dossier (par ex. <em>Documents/Œnoleptica</em>) : chaque cave y sera copiée automatiquement en
+          <code>.db</code>, dans le sous-dossier « db ».
+        </p>
+        <button class="btn btn-principal btn-large" @click="agir(dossier.choisir, 'Dossier lié')">
+          <Icone nom="dossier" :taille="20" /> Choisir le dossier
+        </button>
+      </template>
+      <template v-else>
+        <dl class="infos">
+          <dt>Dossier</dt>
+          <dd class="chemin">{{ dossier.nom }}/db</dd>
+          <dt>État</dt>
+          <dd>{{ dossier.etat === 'pret' ? 'Copie automatique active' : 'Autorisation à renouveler' }}</dd>
+          <template v-if="derniereCopie"><dt>Dernière copie</dt><dd>{{ derniereCopie }}</dd></template>
+          <template v-if="dossier.erreur"><dt>Erreur</dt><dd class="erreur">{{ dossier.erreur }}</dd></template>
+        </dl>
+        <button v-if="dossier.etat === 'a-autoriser'" class="btn btn-principal btn-large" @click="agir(dossier.autoriser)">
+          Autoriser l'accès
+        </button>
+        <button v-else class="btn btn-large" @click="agir(dossier.copier, 'Cave copiée dans le dossier')">
+          <Icone nom="synchro" :taille="20" /> Copier maintenant
+        </button>
+        <button class="btn btn-large" @click="agir(dossier.choisir, 'Dossier changé')">
+          <Icone nom="dossier" :taille="20" /> Changer de dossier
+        </button>
+      </template>
+    </section>
+
     <h2 class="section-titre">Sauvegarde</h2>
     <section class="carte actions">
       <p class="aide">
-        Chaque cave est enregistrée automatiquement sur ce téléphone. Exporte-la régulièrement : le fichier
-        <code>.db</code> s'ouvre aussi dans l'appli Python sur PC.
+        Pour envoyer une copie ailleurs (Drive, mail…). Le fichier <code>.db</code> s'ouvre aussi dans
+        l'appli Python sur PC.
       </p>
       <button class="btn btn-principal btn-large" @click="exporter">
         <Icone nom="telecharger" :taille="20" /> Exporter « {{ store.nomCave }} » (.db)
@@ -273,6 +346,12 @@ async function supprimer() {
 }
 .infos dd {
   margin: 0;
+}
+.chemin {
+  font-family: monospace;
+}
+.erreur {
+  color: var(--danger);
 }
 .creation h2 {
   font-size: 1.3rem;

@@ -4,14 +4,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCaveStore } from '@/stores/cave'
 import AppFab from '@/components/AppFab.vue'
 import ToastHost from '@/components/ToastHost.vue'
+import BandeauDossier from '@/components/BandeauDossier.vue'
+import { useDossierStore } from '@/stores/dossier'
 
 const icone = `${import.meta.env.BASE_URL}icons/icon.svg`
 const store = useCaveStore()
+const dossier = useDossierStore()
 const router = useRouter()
 const route = useRoute()
 
 onMounted(async () => {
   await store.demarrer()
+  await dossier.initialiser()
   // Pas de cave : seul l'accueil (écran de création) est accessible
   if (!store.prete && route.name !== 'accueil') router.replace('/')
 })
@@ -26,6 +30,7 @@ onMounted(async () => {
     <p>{{ store.erreur }}</p>
   </div>
   <template v-else>
+    <BandeauDossier />
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
         <component :is="Component" />

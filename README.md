@@ -48,7 +48,12 @@ npm run build      # vérification des types + build dans dist/
 
 ## Données
 
-- Chaque cave est un fichier SQLite rangé sur le téléphone (OPFS) ; chaque action est enregistrée immédiatement.
+- **Dossier local** : au premier lancement (ou dans **Profil › Dossier local**), on choisit un dossier, par ex.
+  `Documents/Œnoleptica`. Chaque cave y est copiée automatiquement en `.db` dans le sous-dossier `db/`, quelques
+  secondes après chaque modification. Si le fichier du dossier est modifié ailleurs (PC, Drive…), l'appli propose
+  de charger cette version. Les caves du dossier apparaissent dans **Mes caves** et s'ouvrent d'un tap.
+  Nécessite Chrome Android 132 ou plus récent (API File System Access).
+- Chaque cave est un fichier SQLite de travail rangé dans le stockage interne du navigateur (OPFS) ; chaque action est enregistrée immédiatement.
   Plusieurs caves possibles (**Profil › Mes caves**).
 - La table `profils_cepages` (liée à `cepages`) contient le profil organoleptique type de chaque cépage
   (robe, arômes, attaque, milieu de bouche, finale, texture, longueur, acidité / tanins / sucrosité / corps, garde).

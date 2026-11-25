@@ -3,13 +3,13 @@
 import { computed, ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import Icone from './Icone.vue'
-import type { VinCave } from '@/domain/types'
+import type { VinStock } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore, vibrer } from '@/stores/ui'
 import { couleurPastille, joindre, pluriel } from '@/utils/affichage'
 
-const props = defineProps<{ vin: VinCave | null }>()
-const emit = defineEmits<{ fermer: [] }>()
+const props = defineProps<{ vin: VinStock | null }>()
+const emit = defineEmits<{ fermer: []; modifie: [] }>()
 
 const store = useCaveStore()
 const ui = useUiStore()
@@ -48,6 +48,7 @@ async function enregistrer() {
   try {
     await store.reglerStock(props.vin.id_vin, cible.value)
     ui.toast(`${resume.value} enregistrée`)
+    emit('modifie')
     emit('fermer')
   } catch (e) {
     ui.erreur(e)
