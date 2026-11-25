@@ -17,7 +17,7 @@ import {
   effacerVin, insererVin, listerCave, lireDetailVin, lireVinCave, majVin, statistiques,
 } from '@/repositories/vins'
 import {
-  catalogueVigneron, compterLiensVigneron, effacerVigneron, insererVigneron, listerVignerons, tousLesVignerons,
+  catalogueVigneron, compterLiensVigneron, effacerVigneron, insererVigneron, listerVignerons, tousLesVignerons, importerVignerons,
   lireVigneron, majVigneron,
 } from '@/repositories/vignerons'
 import { lireCepages } from '@/repositories/cepages'
@@ -262,6 +262,7 @@ const api = {
   supprimerDegustation: (id: number) => supprimerDegustation(base(), id),
   ajouterVigneron: (v: NouveauVigneron) => insererVigneron(base(), v),
   modifierVigneron: (id: number, v: NouveauVigneron) => majVigneron(base(), id, v),
+  importerVignerons: (liste: NouveauVigneron[]) => importerVignerons(base(), liste),
   supprimerVigneron: (id: number) => effacerVigneron(base(), id),
 }
 

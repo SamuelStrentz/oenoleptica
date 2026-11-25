@@ -14,6 +14,25 @@ export function insererVigneron(db: SqlDb, v: NouveauVigneron): number {
   ).lastId
 }
 
+/**
+ * Ajoute les vignerons absents de la base (même nom et prénom = déjà là).
+ * Tout ou rien. Retourne le nombre d'ajoutés et d'ignorés.
+ */
+export function importerVignerons(db: SqlDb, liste: NouveauVigneron[]): { ajoutes: number; ignores: number } {
+  return db.tx(() => {
+    let ajoutes = 0
+    for (const v of liste) {
+      const existe = db.valeur(
+        "SELECT 1 FROM vignerons WHERE nom = ? COLLATE NOCASE AND COALESCE(prenom, '') = ? COLLATE NOCASE",
+        [v.nom.trim(), v.prenom ?? ''])
+      if (existe) continue
+      insererVigneron(db, v)
+      ajoutes++
+    }
+    return { ajoutes, ignores: liste.length - ajoutes }
+  })
+}
+
 /** Tous les vignerons, fiches complètes (export). */
 export function tousLesVignerons(db: SqlDb): Vigneron[] {
   return db.all<Vigneron>('SELECT * FROM vignerons ORDER BY nom COLLATE NOCASE, prenom COLLATE NOCASE, id_vigneron')

@@ -131,3 +131,21 @@ describe('export SQL des vignerons', () => {
     ])
   })
 })
+
+describe('import SQL des vignerons', () => {
+  it('relit l’export, ignore les doublons et n’exécute jamais le SQL du fichier', async () => {
+    const { vigneronsEnSql, lireVigneronsSql } = await import('@/domain/export-sql')
+    const { tousLesVignerons, importerVignerons } = await import('@/repositories/vignerons')
+    const source = nouvelleBase()
+    insererVigneron(source, { ...vigneron("D'Arenberg"), prenom: 'Chester' })
+    insererVigneron(source, { ...vigneron('Aubert'), prenom: null, mail: 'a@b.fr' })
+    const lus = lireVigneronsSql(vigneronsEnSql(tousLesVignerons(source)))
+    expect(lus.map((v) => [v.prenom, v.nom, v.mail])).toEqual([[null, 'Aubert', 'a@b.fr'], ['Chester', "D'Arenberg", null]])
+    const cible = nouvelleBase()
+    insererVigneron(cible, { ...vigneron('Aubert'), prenom: null })
+    expect(importerVignerons(cible, lus)).toEqual({ ajoutes: 1, ignores: 1 })
+    const piege = "DROP TABLE vins; INSERT INTO vignerons (nom) SELECT 'X'); DROP TABLE stock; -- WHERE NOT EXISTS"
+    expect(lireVigneronsSql(piege)).toEqual([])
+    expect(lireVigneronsSql('bonjour')).toEqual([])
+  })
+})

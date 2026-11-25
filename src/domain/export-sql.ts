@@ -3,7 +3,7 @@
  * (Œnoleptica, appli Python, DB Browser…). Le script n'ajoute que les
  * vignerons absents : on peut le rejouer sans créer de doublon.
  */
-import type { Vigneron } from './types'
+import type { NouveauVigneron, Vigneron } from './types'
 import { COLS_VIGNERON } from '@/repositories/vignerons'
 
 /** Valeur SQL littérale : NULL, ou texte entre apostrophes (apostrophes doublées). */
@@ -33,4 +33,59 @@ export function vigneronsEnSql(vignerons: Vigneron[], date = new Date()): string
     'COMMIT;',
     '',
   ].join('\n')
+}
+
+/**
+ * Relit un fichier produit par vigneronsEnSql(). Le SQL du fichier n'est
+ * jamais exécuté tel quel : on n'en extrait que les valeurs des INSERT de
+ * vignerons, qui sont ensuite insérées par l'appli. Un fichier piégé
+ * (DROP TABLE…) ne peut donc rien faire.
+ */
+export function lireVigneronsSql(texte: string): NouveauVigneron[] {
+  const vignerons: NouveauVigneron[] = []
+  const motif = /INSERT\s+INTO\s+vignerons\s*\(([^)]*)\)\s*SELECT\s+([\s\S]*?)\s+WHERE\s+NOT\s+EXISTS/gi
+  for (const [, colonnes, valeurs] of texte.matchAll(motif)) {
+    const cles = colonnes.split(',').map((c) => c.trim().toLowerCase())
+    const litteraux = lireLitteraux(valeurs)
+    if (!litteraux || litteraux.length !== cles.length) continue
+    const v = Object.fromEntries(COLS_VIGNERON.map((c) => [c, null])) as unknown as NouveauVigneron
+    cles.forEach((cle, i) => {
+      if ((COLS_VIGNERON as readonly string[]).includes(cle)) (v as unknown as Record<string, string | null>)[cle] = litteraux[i]
+    })
+    if (v.nom?.trim()) vignerons.push(v)
+  }
+  return vignerons
+}
+
+/** "'a', NULL, 'l''x'" -> ['a', null, "l'x"] ; null si la liste est mal formée. */
+function lireLitteraux(texte: string): (string | null)[] | null {
+  const valeurs: (string | null)[] = []
+  let i = 0
+  const espaces = () => { while (i < texte.length && /\s/.test(texte[i])) i++ }
+  while (i < texte.length) {
+    espaces()
+    if (texte.startsWith('NULL', i)) {
+      valeurs.push(null)
+      i += 4
+    } else if (texte[i] === "'") {
+      let v = ''
+      i++
+      for (;;) {
+        if (i >= texte.length) return null
+        if (texte[i] === "'") {
+          if (texte[i + 1] === "'") { v += "'"; i += 2; continue }
+          i++
+          break
+        }
+        v += texte[i++]
+      }
+      valeurs.push(v)
+    } else return null
+    espaces()
+    if (i < texte.length) {
+      if (texte[i] !== ',') return null
+      i++
+    }
+  }
+  return valeurs
 }

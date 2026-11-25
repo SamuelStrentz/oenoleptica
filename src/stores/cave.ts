@@ -183,6 +183,13 @@ export const useCaveStore = defineStore('cave', () => {
     apresEcriture()
   }
 
+  async function importerVignerons(liste: NouveauVigneron[]) {
+    const r = await api.importerVignerons(liste)
+    await recharger()
+    if (r.ajoutes) apresEcriture()
+    return r
+  }
+
   async function supprimerVigneron(id: number) {
     await api.supprimerVigneron(id)
     await recharger()
@@ -194,7 +201,7 @@ export const useCaveStore = defineStore('cave', () => {
     dernierVin, prete, nomCave, totalBouteilles, vinsAffiches,
     demarrer, recharger, creer, ouvrir, importer, importerOctets, remplacer, exporter, supprimer,
     ajouterVin, modifierVin, supprimerVin, reglerStock, ajouterDegustation, supprimerDegustation,
-    ajouterVigneron, modifierVigneron, supprimerVigneron,
+    ajouterVigneron, modifierVigneron, supprimerVigneron, importerVignerons,
     // lectures ponctuelles (pas d'état partagé)
     detailVin: api.detailVin, historique: api.historique, catalogue: api.catalogue,
     vigneron: api.vigneron, liensVigneron: api.liensVigneron, tousLesVignerons: api.tousLesVignerons,
