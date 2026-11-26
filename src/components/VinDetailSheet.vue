@@ -6,7 +6,7 @@ import BottomSheet from './BottomSheet.vue'
 import Icone from './Icone.vue'
 import ProfilVin from './profil/ProfilVin.vue'
 import StockSheet from './StockSheet.vue'
-import { CATEGORIES_VIN, type FicheVin, type ProfilOrganoleptique } from '@/domain/types'
+import { CATEGORIES_VIN, libelleFormat, type FicheVin, type ProfilOrganoleptique } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
 import { formaterPrix, nombreCourt } from '@/domain/parsers'
@@ -50,7 +50,8 @@ const infos = computed(() => {
   if (!v) return []
   const lignes: [string, string][] = [
     ['Couleur', v.couleur ?? ''],
-    ['Format', v.format ?? ''],
+    ['Profil', v.style ?? ''],
+    ['Format', libelleFormat(v.format)],
     ['Alcool', v.volume_alcool === null ? '' : `${nombreCourt(v.volume_alcool)} % vol`],
     ['Prix', formaterPrix(v.prix)],
     ['Région', v.region ?? ''],

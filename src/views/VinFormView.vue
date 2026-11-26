@@ -12,6 +12,7 @@ import ChampListe, { type OptionListe } from '@/components/ChampListe.vue'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore, vibrer } from '@/stores/ui'
 import { CATEGORIES_VIN, COULEURS, FORMATS, NOTE_MAX, type AjoutVin, type ChampsVin } from '@/domain/types'
+import { STYLES } from '@/domain/profil/connaissances/terroir'
 import { APPELLATIONS } from '@/domain/profil/connaissances/appellations'
 import { REGIONS_VITICOLES } from '@/domain/profil/connaissances/millesimes'
 import { nombre, nombreCourt, prix, texte } from '@/domain/parsers'
@@ -32,7 +33,7 @@ const modification = computed(() => idVin.value !== null)
 
 const f = reactive({
   domaine: '', millesime: '', appellation: '', cuvee: '', cru: '',
-  couleur: '', prix: '', cepage: '', volume_alcool: '', format: '75 cl',
+  couleur: '', prix: '', cepage: '', volume_alcool: '', format: '75 cl', style: '',
   quantite: 1, note: '', categorie: '',
   vigneron: AUCUN as number,
 })
@@ -70,6 +71,19 @@ const appellations = computed<OptionListe[]>(() => {
     .sort((a, b) => a.valeur.localeCompare(b.valeur, 'fr'))
   return [...deLaCave, ...autres]
 })
+/** Profils (styles) du moteur, puis ceux déjà saisis dans ta cave. */
+const profils = computed<OptionListe[]>(() => {
+  const connus = Object.values(STYLES).map((s) => s.libelle)
+  const saisis = uniques(store.vins.map((v) => v.style)).filter((s) => !connus.some((c) => c.toLowerCase() === s.toLowerCase()))
+  return [...connus, ...saisis].map((valeur) => ({ valeur }))
+})
+/** Formats : « 37,5 cl - Fillette »…, puis les formats inhabituels déjà saisis. */
+const formats = computed<OptionListe[]>(() => {
+  const autres = uniques(store.vins.map((v) => v.format))
+    .filter((x) => !FORMATS.some((fo) => fo.valeur.replace(/\s/g, '').toLowerCase() === x.replace(/\s/g, '').toLowerCase()))
+  return [...FORMATS.map((fo) => ({ valeur: fo.valeur, libelle: `${fo.valeur} - ${fo.nom}` })), ...autres.map((valeur) => ({ valeur }))]
+})
+
 /** Catégories : VCC, VCM, VCS, puis celles déjà saisies dans ta cave. */
 const categories = computed<OptionListe[]>(() => [
   ...Object.entries(CATEGORIES_VIN).map(([valeur, d]) => ({ valeur, detail: d.replace('Vin de consommation ', 'Conso. ') })),
@@ -86,7 +100,7 @@ onMounted(async () => {
       cuvee: t(vin.cuvee), cru: t(vin.cru), couleur: t(vin.couleur),
       prix: vin.prix === null ? '' : vin.prix.toFixed(2).replace('.', ','),
       cepage: t(vin.cepage), volume_alcool: vin.volume_alcool === null ? '' : nombreCourt(vin.volume_alcool),
-      format: t(vin.format), vigneron: vin.id_vigneron ?? AUCUN,
+      format: t(vin.format), style: t(vin.style), vigneron: vin.id_vigneron ?? AUCUN,
       note: avis[0]?.note === null || avis[0]?.note === undefined ? '' : nombreCourt(avis[0].note),
       categorie: avis[0]?.categorie ?? '',
     })
@@ -136,6 +150,7 @@ function lireChamps(): ChampsVin {
     cepage: texte(f.cepage),
     volume_alcool: verifier('volume_alcool', () => nombre(f.volume_alcool, "Le degré d'alcool", { min: 0, max: 100 })),
     format: texte(f.format),
+    style: texte(f.style),
   }
 }
 
@@ -271,6 +286,10 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
 
         <span class="libelle">Cépages</span>
         <CepageChips v-model="f.cepage" :connus="store.cepages" />
+        <div class="champ profil">
+          <span>Profil</span>
+          <ChampListe v-model="f.style" name="style" :options="profils" titre-liste="Profils" placeholder="Déduit automatiquement" />
+        </div>
       </section>
 
       <h2 class="section-titre">Bouteilles</h2>
@@ -281,24 +300,16 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
             <button type="button" aria-label="Moins" :disabled="f.quantite === 0" @click="f.quantite--">
               <Icone nom="moins" />
             </button>
-            <strong :class="{ vide: f.quantite === 0 }">{{ f.quantite }}</strong>
+            <strong :class="{ zero: f.quantite === 0 }">{{ f.quantite }}</strong>
             <button type="button" aria-label="Plus" @click="f.quantite++"><Icone nom="plus" /></button>
           </div>
         </div>
         <p v-else class="aide-stock">
           {{ pluriel(stockActuel, 'bouteille') }} en cave — le stock se modifie depuis la pastille de la vignette.
         </p>
-        <span class="libelle">Format</span>
-        <div class="choix">
-          <button
-            v-for="fo in FORMATS"
-            :key="fo"
-            type="button"
-            :aria-pressed="f.format === fo"
-            @click="f.format = f.format === fo ? '' : fo"
-          >
-            {{ fo }}
-          </button>
+        <div class="champ">
+          <span>Format</span>
+          <ChampListe v-model="f.format" name="format" :options="formats" titre-liste="Formats" placeholder="75 cl" />
         </div>
         <label class="champ" :class="erreur('volume_alcool')">
           <span>Alcool (% vol)</span>
@@ -395,8 +406,11 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
   font-size: 1.6rem;
   color: var(--vert);
 }
-.pas-a-pas strong.vide {
+.pas-a-pas strong.zero {
   color: var(--rouge);
+}
+.profil {
+  margin-top: 14px;
 }
 .zone-suppr {
   margin-top: 28px;

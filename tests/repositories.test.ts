@@ -40,7 +40,7 @@ describe('structure', () => {
     const db = nouvelleBase(false)
     db.exec(`CREATE TABLE vignerons (id_vigneron INTEGER PRIMARY KEY, prenom TEXT, nom TEXT NOT NULL)`)
     db.exec(`CREATE TABLE vins (id_vin INTEGER PRIMARY KEY, id_vigneron INTEGER, domaine TEXT NOT NULL)`)
-    expect(migrer(db)).toEqual(['vins.cuvee', 'vins.cru', 'vins.prix', 'vignerons.ville', 'vignerons.mail', 'vignerons.domaine', 'cepages', 'profils_cepages', 'degustations'])
+    expect(migrer(db)).toEqual(['vins.cuvee', 'vins.cru', 'vins.prix', 'vignerons.ville', 'vignerons.mail', 'vignerons.domaine', 'vins.style', 'cepages', 'profils_cepages', 'degustations'])
     expect(migrer(db)).toEqual([])
   })
 })

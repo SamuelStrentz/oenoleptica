@@ -17,7 +17,7 @@ export function vin(modifs: Partial<AjoutVin> = {}): AjoutVin {
   return {
     domaine: 'Domaine Gramenon', millesime: 2021, appellation: 'Côtes du Rhône',
     cuvee: 'Poignée de raisins', cru: null, couleur: 'Rouge', prix: 18.5,
-    cepage: 'Grenache, Syrah', volume_alcool: 13.5, format: '75 cl',
+    cepage: 'Grenache, Syrah', volume_alcool: 13.5, format: '75 cl', style: null,
     vigneron_id: null, vigneron_nouveau: null, quantite: 0, note: null, categorie: null,
     ...modifs,
   }

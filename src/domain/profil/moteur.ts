@@ -13,7 +13,7 @@ import { CRITERES, PAR_CLE, familleCouleur, type Critere, type FamilleCouleur } 
 import { PAR_DESCRIPTEUR, aromesDepuisTexte } from './aromes'
 import { trouverAppellation, type Appellation } from './connaissances/appellations'
 import {
-  CARACTERES, CLIMATS, MENTIONS, MENTIONS_STYLE, SOLS, STYLES, type Couche, type Style,
+  CARACTERES, CLIMATS, MENTIONS, MENTIONS_STYLE, SOLS, STYLES, styleDepuisLibelle, type Couche, type Style,
 } from './connaissances/terroir'
 import { REGIONS_VITICOLES, caractereMillesime, regionDepuisAdministrative } from './connaissances/millesimes'
 import type { Contribution, EntreeProfil, Fenetre, ProfilCalcule, ValeurCalculee } from './types'
@@ -185,13 +185,14 @@ export function calculerProfil(e: EntreeProfil): ProfilCalcule {
   }
   if (!app) manques.push('appellation')
 
-  // 3. Style (mentions de l'étiquette > appellation > couleur) ---------
+  // 3. Style (choisi > mentions de l'étiquette > appellation > couleur) -
+  const choisi = styleDepuisLibelle(e.style)
   const texteStyle = cleCepage([e.cuvee, e.cru].filter(Boolean).join(' '))
-  let style: Style | null = MENTIONS_STYLE.find(([m]) => m.test(texteStyle))?.[1] ?? null
+  let style: Style | null = choisi ?? MENTIONS_STYLE.find(([m]) => m.test(texteStyle))?.[1] ?? null
   if (!style && app && app.style !== 'variable') style = app.style
   if (!style && contient(etiquette, 'effervescent', 'petillant')) style = 'brut'
   if (!style && famille !== 'rouge') style = 'sec'
-  if (style && famille === 'rouge' && !STYLES[style].effervescent) style = null // les rouges restent secs
+  if (!choisi && style && famille === 'rouge' && !STYLES[style].effervescent) style = null // les rouges restent secs
   if (style) {
     const s = STYLES[style]
     const libelle = `Style ${s.libelle.toLowerCase()}`

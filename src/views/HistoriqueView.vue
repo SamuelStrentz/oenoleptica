@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /** Historique des achats : récapitulatif des entrées et sorties de stock. */
-import BandeauLogo from '@/components/BandeauLogo.vue'
 import { computed, onMounted, ref } from 'vue'
 import OngletsAccueil from '@/components/OngletsAccueil.vue'
 import VinDetailSheet from '@/components/VinDetailSheet.vue'
@@ -82,7 +81,6 @@ async function exporter() {
 
 <template>
   <main class="page">
-    <BandeauLogo />
     <header class="entete">
       <OngletsAccueil />
       <h1>Historique</h1>

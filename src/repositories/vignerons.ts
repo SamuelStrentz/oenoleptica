@@ -43,7 +43,7 @@ export function lireVigneron(db: SqlDb, id: number): Vigneron | undefined {
 }
 
 /**
- * Vignerons triés par nom, avec leurs domaines et leur nombre de vins /
+ * Vignerons triés par prénom, avec leurs domaines et leur nombre de vins /
  * bouteilles. Les homonymes sont distingués par leur numéro.
  */
 export function listerVignerons(db: SqlDb): VigneronListe[] {
@@ -57,7 +57,7 @@ export function listerVignerons(db: SqlDb): VigneronListe[] {
            (SELECT COALESCE(SUM(s.quantite), 0) FROM stock s
               JOIN vins v ON v.id_vin = s.id_vin WHERE v.id_vigneron = g.id_vigneron) AS bouteilles
     FROM vignerons g
-    ORDER BY g.nom COLLATE NOCASE, g.prenom COLLATE NOCASE, g.id_vigneron`)
+    ORDER BY COALESCE(NULLIF(TRIM(g.prenom), ''), g.nom) COLLATE NOCASE, g.nom COLLATE NOCASE, g.id_vigneron`)
   const vus = new Set<string>()
   return lignes.map(({ prenom, nom, domaine, ...reste }) => {
     let libelle = [prenom, nom].filter(Boolean).join(' ')

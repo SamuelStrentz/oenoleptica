@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Vignerons : liste, fiche (tap), export SQL (appui long). */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
 import VigneronSheet from '@/components/VigneronSheet.vue'
@@ -13,8 +13,7 @@ import { nomFichier, partagerOuTelecharger } from '@/utils/fichiers'
 import { apresPanneau } from '@/utils/panneaux'
 import type { VigneronListe } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
-import { joindre, pluriel } from '@/utils/affichage'
-import BandeauLogo from '@/components/BandeauLogo.vue'
+import { pluriel } from '@/utils/affichage'
 import { exporterTousLesVignerons, importerFichierVignerons } from '@/utils/vignerons-sql'
 
 const router = useRouter()
@@ -48,6 +47,23 @@ async function exporter(seul: VigneronListe | null) {
   }
 }
 
+const SANS_REGION = 'Région non renseignée'
+
+/** Vignerons groupés par région (ordre alphabétique, sans région en dernier), triés par prénom. */
+const groupes = computed(() => {
+  const parRegion = new Map<string, VigneronListe[]>()
+  for (const v of store.vignerons) {
+    const region = v.region?.trim() || SANS_REGION
+    parRegion.set(region, [...(parRegion.get(region) ?? []), v])
+  }
+  return [...parRegion]
+    .sort(([a], [b]) => (a === SANS_REGION ? 1 : b === SANS_REGION ? -1 : a.localeCompare(b, 'fr')))
+    .map(([region, vignerons]) => ({
+      region,
+      vignerons: vignerons.sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr', { sensitivity: 'base' })),
+    }))
+})
+
 function initiales(libelle: string) {
   return libelle
     .split(/\s+/)
@@ -59,35 +75,39 @@ function initiales(libelle: string) {
 
 <template>
   <main class="page">
-    <BandeauLogo />
     <header class="barre">
       <button class="bouton-icone" aria-label="Retour" @click="router.back()"><Icone nom="retour" /></button>
       <h1>Vignerons</h1>
     </header>
 
-    <ul v-if="store.vignerons.length" class="liste">
-      <li
-        v-for="v in store.vignerons"
-        :key="v.id_vigneron"
-        class="carte vigneron"
-        role="button"
-        tabindex="0"
-        v-on="appui.ecouteurs(() => (menu = v))"
-        @click="appui.clicNormal() && (ouvert = v)"
-        @keydown.enter="ouvert = v"
-      >
-        <span class="avatar">{{ initiales(v.libelle) }}</span>
-        <div class="infos">
-          <strong>{{ v.libelle }}</strong>
-          <span v-if="v.domaines" class="domaines">{{ v.domaines }}</span>
-          <span class="lieu">{{ joindre(v.ville, v.region) }}</span>
-        </div>
-        <div class="compte">
-          <strong>{{ v.bouteilles }}</strong>
-          <span>{{ pluriel(v.nb_vins, 'vin') }}</span>
-        </div>
-      </li>
-    </ul>
+    <template v-if="store.vignerons.length">
+      <section v-for="g in groupes" :key="g.region" class="groupe">
+        <h2 class="separateur"><span>{{ g.region }}</span></h2>
+        <ul class="liste">
+          <li
+            v-for="v in g.vignerons"
+            :key="v.id_vigneron"
+            class="carte vigneron"
+            role="button"
+            tabindex="0"
+            v-on="appui.ecouteurs(() => (menu = v))"
+            @click="appui.clicNormal() && (ouvert = v)"
+            @keydown.enter="ouvert = v"
+          >
+            <span class="avatar">{{ initiales(v.libelle) }}</span>
+            <div class="infos">
+              <strong>{{ v.libelle }}</strong>
+              <span v-if="v.domaines" class="domaines">{{ v.domaines }}</span>
+              <span v-if="v.ville" class="lieu">{{ v.ville }}</span>
+            </div>
+            <div class="compte">
+              <strong>{{ v.bouteilles }}</strong>
+              <span>{{ pluriel(v.nb_vins, 'vin') }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </template>
     <p v-else class="vide">Aucun vigneron pour l'instant.<br />Touche le + vert pour en ajouter un.</p>
     <p v-if="store.vignerons.length" class="astuce">Appui long sur un vigneron pour l'exporter.</p>
     <VigneronSheet :resume="ouvert" @fermer="ouvert = null" />
@@ -122,6 +142,39 @@ function initiales(libelle: string) {
 </template>
 
 <style scoped>
+.groupe + .groupe {
+  margin-top: 6px;
+}
+/* Séparateur de région : nom en petites capitales entre deux filets dégradés */
+.separateur {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 4px 10px;
+  font-family: var(--serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.separateur::before,
+.separateur::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(140 33 66 / 45%));
+}
+.separateur::after {
+  background: linear-gradient(90deg, rgb(140 33 66 / 45%), transparent);
+}
+.separateur span {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .discret {
   position: fixed;
   bottom: calc(var(--bas-sur) + 30px);

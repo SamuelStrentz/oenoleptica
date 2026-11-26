@@ -46,6 +46,16 @@ export const STYLES: Record<Style, DefStyle> = {
     aromes: { brioche: 0.35, poire: 0.25 } },
 }
 
+const normaliser = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ').trim()
+
+/** « Moelleux », « moelleux », « vendanges-tardives »… -> clé de style ; inconnu -> null. */
+export function styleDepuisLibelle(texte: string | null | undefined): Style | null {
+  if (!texte?.trim()) return null
+  const t = normaliser(texte)
+  const trouve = (Object.entries(STYLES) as [Style, DefStyle][]).find(([cle, s]) => normaliser(s.libelle) === t || normaliser(cle) === t)
+  return trouve?.[0] ?? null
+}
+
 /**
  * Mentions d'étiquette (cuvée, cru) qui révèlent le style : très fréquentes
  * en Alsace (« Sec », « Doux », « Vendanges tardives »…). Les plus précises d'abord.

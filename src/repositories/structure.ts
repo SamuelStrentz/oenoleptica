@@ -108,11 +108,17 @@ export function migrer(db: SqlDb): string[] {
       db.exec(ORDRE_CREATE_DEGUSTATIONS)
       faits.push('degustations')
     }
-    if (Number(db.valeur('PRAGMA user_version') ?? 0) < 1) {
+    const version = Number(db.valeur('PRAGMA user_version') ?? 0)
+    if (version < 1) {
       const n = notesSur100(db)
       if (n) faits.push(`${n} note(s) sur 100`)
-      db.exec(`PRAGMA user_version = ${VERSION_DONNEES}`)
     }
+    if (version < 2 && db.colonnes('vins').includes('format')) {
+      for (const [ancien, nouveau] of [['150 cl', '1,5 L'], ['300 cl', '3 L']]) {
+        db.run('UPDATE vins SET format = ? WHERE REPLACE(LOWER(format), \' \', \'\') = ?', [nouveau, ancien.replace(' ', '')])
+      }
+    }
+    if (version < VERSION_DONNEES) db.exec(`PRAGMA user_version = ${VERSION_DONNEES}`)
   })
   return faits
 }

@@ -13,7 +13,7 @@ import { mouvementsDuVin } from './stock'
 export function listerCave(db: SqlDb): VinCave[] {
   return db.all<VinCave>(`
     SELECT v.id_vin, v.id_vigneron, v.domaine, v.millesime, v.appellation, v.cuvee, v.cru,
-           v.couleur, v.prix, v.cepage, v.volume_alcool, v.format,
+           v.couleur, v.prix, v.cepage, v.volume_alcool, v.format, v.style,
            COALESCE(s.quantite, 0) AS quantite, g.region,
            ROUND(AVG(a.note), 1) AS note, GROUP_CONCAT(DISTINCT a.categorie) AS categories
     FROM vins v
@@ -60,10 +60,10 @@ export function insererVin(db: SqlDb, d: AjoutVin, date = aujourdhui()): number 
 
     const idVin = db.run(
       `INSERT INTO vins (id_vigneron, domaine, cepage, millesime, appellation, cuvee, cru,
-                         couleur, prix, volume_alcool, format)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                         couleur, prix, volume_alcool, format, style)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [idVigneron, d.domaine.trim(), d.cepage, d.millesime, d.appellation, d.cuvee, d.cru,
-        d.couleur, d.prix, d.volume_alcool, d.format],
+        d.couleur, d.prix, d.volume_alcool, d.format, d.style ?? null],
     ).lastId
 
     // Ligne de stock toujours présente (le trigger s'en charge normalement)
@@ -93,10 +93,10 @@ export function majVin(db: SqlDb, idVin: number, idVigneron: number | null, d: C
   db.tx(() => {
     const { changes } = db.run(
       `UPDATE vins SET id_vigneron = ?, domaine = ?, cepage = ?, millesime = ?, appellation = ?,
-              cuvee = ?, cru = ?, couleur = ?, prix = ?, volume_alcool = ?, format = ?
+              cuvee = ?, cru = ?, couleur = ?, prix = ?, volume_alcool = ?, format = ?, style = ?
        WHERE id_vin = ?`,
       [idVigneron, d.domaine.trim(), d.cepage, d.millesime, d.appellation, d.cuvee, d.cru,
-        d.couleur, d.prix, d.volume_alcool, d.format, idVin],
+        d.couleur, d.prix, d.volume_alcool, d.format, d.style ?? null, idVin],
     )
     if (changes === 0) throw new Error('Vin introuvable.')
     memoriserCepages(db, [[d.cepage, d.couleur]])

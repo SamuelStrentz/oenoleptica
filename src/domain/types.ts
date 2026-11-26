@@ -3,7 +3,27 @@ import type { TypeCepage } from './cepages'
 import type { Degustation, ProfilCalcule } from './profil/types'
 
 export const COULEURS = ['Rouge', 'Blanc', 'Rosé'] as const
-export const FORMATS = ['37,5 cl', '75 cl', '150 cl', '300 cl'] as const
+/** Formats de bouteille : contenance (valeur enregistrée) et nom d'usage. */
+export const FORMATS: readonly { valeur: string; nom: string }[] = [
+  { valeur: '37,5 cl', nom: 'Fillette' },
+  { valeur: '50 cl', nom: 'Médium' },
+  { valeur: '75 cl', nom: 'Bouteille' },
+  { valeur: '1,5 L', nom: 'Magnum' },
+  { valeur: '3 L', nom: 'Jéroboam' },
+  { valeur: '4,5 L', nom: 'Réhoboam' },
+  { valeur: '6 L', nom: 'Mathusalem' },
+  { valeur: '9 L', nom: 'Salmanazar' },
+  { valeur: '12 L', nom: 'Balthazar' },
+  { valeur: '15 L', nom: 'Nabuchodonosor' },
+  { valeur: '18 L', nom: 'Melchior' },
+]
+
+/** « 1,5 L » -> « 1,5 L - Magnum » (format inconnu : tel quel). */
+export function libelleFormat(format: string | null | undefined): string {
+  if (!format) return ''
+  const f = FORMATS.find((x) => x.valeur.replace(/\s/g, '').toLowerCase() === format.replace(/\s/g, '').toLowerCase())
+  return f ? `${f.valeur} - ${f.nom}` : format
+}
 
 /** Catégories d'un vin (champ « categorie » de l'avis). */
 export const CATEGORIES_VIN: Record<string, string> = {
@@ -31,6 +51,7 @@ export interface VinCave {
   cepage: string | null
   volume_alcool: number | null
   format: string | null
+  style: string | null
   quantite: number
   region: string | null
   note: number | null
@@ -79,6 +100,8 @@ export interface ChampsVin {
   cepage: string | null
   volume_alcool: number | null
   format: string | null
+  /** Profil (style) choisi : Sec, Demi-sec, Moelleux… ; vide = déduit par le moteur. */
+  style: string | null
 }
 
 /** Données du formulaire « Ajouter un vin » (cf. inserer_vin en Python). */

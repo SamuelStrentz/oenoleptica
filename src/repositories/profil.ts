@@ -17,6 +17,7 @@ function entree(db: SqlDb, vin: VinCave, tous: VinCave[], annee: number): Entree
     couleur: vin.couleur,
     appellation: vin.appellation,
     cuvee: vin.cuvee,
+    style: vin.style,
     cru: vin.cru,
     millesime: vin.millesime,
     regionVigneron: vin.region,

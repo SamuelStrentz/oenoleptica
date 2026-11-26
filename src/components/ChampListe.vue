@@ -9,6 +9,8 @@ import Icone from './Icone.vue'
 
 export interface OptionListe {
   valeur: string
+  /** Texte affiché dans la liste, si différent de la valeur enregistrée. */
+  libelle?: string
   detail?: string
 }
 
@@ -18,6 +20,22 @@ const emit = defineEmits<{ choisi: [valeur: string] }>()
 
 const racine = ref<HTMLElement>()
 const ouverte = ref(false)
+/** Liste dépliée au-dessus du champ quand il n'y a pas la place en dessous. */
+const versHaut = ref(false)
+const hauteurMax = ref(290)
+
+/** Place disponible sous le champ, hors barre « Enregistrer » collée en bas. */
+const RESERVE_BAS = 110
+function placer() {
+  const r = racine.value?.getBoundingClientRect()
+  if (!r) return
+  const titre = 34
+  const besoin = Math.min(290, visibles.value.length * 56 + 8) + titre
+  const dessous = window.innerHeight - r.bottom - RESERVE_BAS
+  const dessus = r.top - 16
+  versHaut.value = dessous < besoin && dessus > dessous
+  hauteurMax.value = Math.max(120, Math.min(290, (versHaut.value ? dessus : dessous) - titre - 12))
+}
 /** Liste ouverte par la flèche : tout afficher ; par la saisie : filtrer. */
 const filtrer = ref(false)
 
@@ -25,17 +43,21 @@ const normaliser = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 const visibles = computed(() => {
   const q = normaliser(modele.value)
   if (!filtrer.value || !q) return props.options
-  return props.options.filter((o) => normaliser(o.valeur).includes(q))
+  return props.options.filter((o) => normaliser(o.libelle ?? o.valeur).includes(q))
 })
 
 function basculer() {
   filtrer.value = false
   ouverte.value = !ouverte.value
-  if (ouverte.value) nextTick(() => racine.value?.querySelector('.options-liste')?.scrollTo({ top: 0 }))
+  if (ouverte.value) {
+    placer()
+    nextTick(() => racine.value?.querySelector('.options-liste')?.scrollTo({ top: 0 }))
+  }
 }
 
 function surSaisie() {
   filtrer.value = true
+  if (!ouverte.value) placer()
   ouverte.value = visibles.value.length > 0
 }
 
@@ -75,14 +97,14 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', surDehors))
       <Icone nom="chevron" :taille="20" />
     </button>
     <Transition name="liste">
-      <div v-if="ouverte && visibles.length" class="panneau-liste">
+      <div v-if="ouverte && visibles.length" class="panneau-liste" :class="{ 'vers-haut': versHaut }">
         <p v-if="titreListe && !filtrer" class="titre-liste">{{ titreListe }}</p>
-        <ul class="options-liste" role="listbox">
+        <ul class="options-liste" role="listbox" :style="{ maxHeight: `${hauteurMax}px` }">
           <li v-for="o in visibles" :key="o.valeur">
             <button type="button" role="option" :aria-selected="o.valeur === modele" @pointerdown.prevent @click="choisir(o)">
-              <span class="initiale">{{ o.valeur.charAt(0).toUpperCase() }}</span>
+              <span v-if="/\p{L}/u.test(o.valeur.charAt(0))" class="initiale">{{ o.valeur.charAt(0).toUpperCase() }}</span>
               <span class="textes">
-                <strong>{{ o.valeur }}</strong>
+                <strong>{{ o.libelle ?? o.valeur }}</strong>
                 <small v-if="o.detail">{{ o.detail }}</small>
               </span>
               <Icone v-if="o.valeur === modele" nom="coche" :taille="18" />
@@ -130,6 +152,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', surDehors))
   border-radius: 16px;
   box-shadow: var(--ombre-forte);
   overflow: hidden;
+}
+.panneau-liste.vers-haut {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 .titre-liste {
   margin: 0;
@@ -200,5 +226,9 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', surDehors))
 .liste-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+.vers-haut.liste-enter-from,
+.vers-haut.liste-leave-to {
+  transform: translateY(6px);
 }
 </style>

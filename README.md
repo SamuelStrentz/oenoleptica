@@ -81,6 +81,9 @@ npm run build      # vérification des types + build dans dist/
 - **Vignerons** : colonne `domaine` ajoutée (remplie depuis leurs vins quand il n'y en a qu'un).
   Sur l'écran Vignerons, les boutons discrets **Importer** / **Exporter** de part et d'autre du + lisent et
   produisent un script `.sql` ; l'import n'exécute jamais le SQL du fichier, il n'en lit que les valeurs.
+- **Vins** : colonne `style` (champ « Profil » : Sec, Demi-sec, Moelleux…) ; vide = déduit par le moteur, sinon
+  prioritaire. Formats en liste (37,5 cl Fillette … 18 L Melchior) ; les anciens « 150 cl » / « 300 cl »
+  passent en « 1,5 L » / « 3 L » (`user_version` 2).
 - **Statistiques** (onglet de l'accueil) : bouteilles en cave par couleur, appellation, département, et
   maturité d'après la fenêtre de garde du moteur de profil.
 - Police de l'écran de lancement : Cormorant Garamond (licence OFL, `public/fonts/OFL.txt`).

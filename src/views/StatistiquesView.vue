@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /** Statistiques de la cave : répartitions des bouteilles en cave et maturité. */
 import { computed, onMounted, ref } from 'vue'
-import BandeauLogo from '@/components/BandeauLogo.vue'
 import OngletsAccueil from '@/components/OngletsAccueil.vue'
 import VinDetailSheet from '@/components/VinDetailSheet.vue'
 import { useCaveStore } from '@/stores/cave'
@@ -50,7 +49,6 @@ const sections = computed(() =>
 
 <template>
   <main class="page">
-    <BandeauLogo />
     <header class="entete">
       <OngletsAccueil />
       <h1>Statistiques</h1>

@@ -32,7 +32,7 @@ describe('migration lot 6', () => {
     const faits = migrer(db)
     expect(faits).toContain('vignerons.domaine')
     expect(db.all<{ note: number | null }>('SELECT note FROM avis ORDER BY id_avis').map((r) => r.note)).toEqual([81, 80, 86, null])
-    expect(db.valeur('PRAGMA user_version')).toBe(1)
+    expect(db.valeur('PRAGMA user_version')).toBe(2)
     // un seul domaine → repris ; deux domaines → laissé vide
     expect(db.all('SELECT nom, domaine FROM vignerons ORDER BY id_vigneron'))
       .toEqual([{ nom: 'LIMOUSIN', domaine: 'Domaine Cabarrouy' }, { nom: 'HENRIQUET', domaine: null }])
@@ -85,5 +85,38 @@ describe('statistiques', () => {
     expect(tb.maturite.reduce((s, p) => s + p.bouteilles, 0)).toBe(4)
     // un Sancerre de 2005 est passé : il ressort en priorité
     expect(tb.prioritaires[0]).toMatchObject({ appellation: 'Sancerre', maturite: 'passe' })
+  })
+})
+
+describe('lot 8', () => {
+  it('profil choisi : enregistré et prioritaire sur la déduction du moteur', async () => {
+    const { profilDuVin } = await import('@/repositories/profil')
+    const { lireVinCave } = await import('@/repositories/vins')
+    const db = nouvelleBase()
+    const id = insererVin(db, vin({ couleur: 'Blanc', appellation: 'Alsace', cepage: 'Riesling', style: 'Moelleux' }))
+    expect(lireVinCave(db, id)?.style).toBe('Moelleux')
+    expect(profilDuVin(db, id).style.cle).toBe('moelleux')
+    const sec = insererVin(db, vin({ couleur: 'Blanc', appellation: 'Alsace', cepage: 'Riesling', style: null }))
+    expect(profilDuVin(db, sec).style.cle).toBe('sec')
+  })
+
+  it('formats : anciens « 150 cl » passés en litres, libellé avec le nom d’usage', async () => {
+    const { libelleFormat } = await import('@/domain/types')
+    const db = nouvelleBase()
+    insererVin(db, vin({ format: '150 cl' }))
+    db.exec('PRAGMA user_version = 1')
+    migrer(db)
+    expect(db.valeur('SELECT format FROM vins')).toBe('1,5 L')
+    expect(libelleFormat('1,5 L')).toBe('1,5 L - Magnum')
+    expect(libelleFormat('37,5cl')).toBe('37,5 cl - Fillette')
+    expect(libelleFormat('70 cl')).toBe('70 cl')
+  })
+
+  it('vignerons triés par prénom', () => {
+    const db = nouvelleBase()
+    for (const [p, n] of [['Patrice', 'LIMOUSIN'], ['Anne', 'HENRIQUET'], [null, 'HELFRICH']] as const) {
+      insererVigneron(db, { ...vigneron(n), prenom: p })
+    }
+    expect(listerVignerons(db).map((v) => v.libelle)).toEqual(['Anne HENRIQUET', 'HELFRICH', 'Patrice LIMOUSIN'])
   })
 })

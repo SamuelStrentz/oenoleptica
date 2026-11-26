@@ -54,6 +54,8 @@ export interface EntreeProfil {
   appellation: string | null
   cuvee: string | null
   cru: string | null
+  /** Profil (style) choisi dans la fiche du vin, prioritaire sur la déduction. */
+  style?: string | null
   millesime: number | null
   regionVigneron: string | null
   cepages: { nom: string; type: TypeCepage; profil: ProfilOrganoleptique | null }[]
