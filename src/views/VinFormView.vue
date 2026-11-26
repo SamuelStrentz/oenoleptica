@@ -11,7 +11,9 @@ import VigneronChamps from '@/components/VigneronChamps.vue'
 import ChampListe, { type OptionListe } from '@/components/ChampListe.vue'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore, vibrer } from '@/stores/ui'
-import { COULEURS, FORMATS, type AjoutVin, type ChampsVin } from '@/domain/types'
+import { CATEGORIES_VIN, COULEURS, FORMATS, NOTE_MAX, type AjoutVin, type ChampsVin } from '@/domain/types'
+import { APPELLATIONS } from '@/domain/profil/connaissances/appellations'
+import { REGIONS_VITICOLES } from '@/domain/profil/connaissances/millesimes'
 import { nombre, nombreCourt, prix, texte } from '@/domain/parsers'
 import { couleurPastille, pluriel } from '@/utils/affichage'
 import { versBase, vigneronVide } from '@/utils/vigneron'
@@ -56,7 +58,23 @@ const domaines = computed<OptionListe[]>(() => {
       detail: [pluriel(d.n, 'vin'), [...d.appellations].slice(0, 2).join(', ')].filter(Boolean).join(' · '),
     }))
 })
-const appellations = computed(() => uniques(store.vins.map((v) => v.appellation)))
+/** Appellations : celles de ta cave d'abord, puis celles que le moteur de profil connaît. */
+const appellations = computed<OptionListe[]>(() => {
+  const compte = new Map<string, number>()
+  for (const v of store.vins) if (v.appellation) compte.set(v.appellation, (compte.get(v.appellation) ?? 0) + 1)
+  const deLaCave = [...compte].sort(([a], [b]) => a.localeCompare(b, 'fr'))
+    .map(([valeur, n]) => ({ valeur, detail: `${pluriel(n, 'vin')} dans ta cave` }))
+  const connues = new Set([...compte.keys()].map((a) => a.toLowerCase()))
+  const autres = APPELLATIONS.filter((a) => !connues.has(a.nom.toLowerCase()))
+    .map((a) => ({ valeur: a.nom, detail: a.region ? REGIONS_VITICOLES[a.region].libelle : undefined }))
+    .sort((a, b) => a.valeur.localeCompare(b.valeur, 'fr'))
+  return [...deLaCave, ...autres]
+})
+/** Catégories : VCC, VCM, VCS, puis celles déjà saisies dans ta cave. */
+const categories = computed<OptionListe[]>(() => [
+  ...Object.entries(CATEGORIES_VIN).map(([valeur, d]) => ({ valeur, detail: d.replace('Vin de consommation ', 'Conso. ') })),
+  ...uniques(store.categories).filter((c) => !(c.toUpperCase() in CATEGORIES_VIN)).map((valeur) => ({ valeur })),
+])
 
 onMounted(async () => {
   if (idVin.value === null) return
@@ -83,8 +101,14 @@ onMounted(async () => {
 // Choisir un domaine déjà connu pré-sélectionne son vigneron
 function surDomaine() {
   if (f.vigneron !== AUCUN) return
-  const connu = store.vins.find((v) => v.domaine.toLowerCase() === f.domaine.trim().toLowerCase() && v.id_vigneron)
+  const d = f.domaine.trim().toLowerCase()
+  if (!d) return
+  const connu = store.vins.find((v) => v.domaine.toLowerCase() === d && v.id_vigneron)
   if (connu?.id_vigneron) f.vigneron = connu.id_vigneron
+  else {
+    const vigneron = store.vignerons.find((v) => v.domaines?.split(', ').some((x) => x.toLowerCase() === d))
+    if (vigneron) f.vigneron = vigneron.id_vigneron
+  }
 }
 
 function lireChamps(): ChampsVin {
@@ -117,7 +141,7 @@ function lireChamps(): ChampsVin {
 
 function lireAvis() {
   try {
-    return { note: nombre(f.note, 'La note', { min: 0 }), categorie: texte(f.categorie) }
+    return { note: nombre(f.note, 'La note', { min: 0, max: NOTE_MAX }), categorie: texte(f.categorie) }
   } catch (e) {
     champEnErreur.value = 'note'
     throw e
@@ -131,7 +155,8 @@ async function enregistrer() {
     let vigneron_nouveau = null
     if (f.vigneron === NOUVEAU) {
       try {
-        vigneron_nouveau = versBase(nouveauVigneron.value)
+        // sans domaine saisi, le nouveau vigneron prend celui du vin
+        vigneron_nouveau = versBase({ ...nouveauVigneron.value, domaine: nouveauVigneron.value.domaine || f.domaine })
       } catch (e) {
         champEnErreur.value = 'v_nom'
         throw e
@@ -216,10 +241,10 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
             <input v-model="f.prix" name="prix" inputmode="decimal" placeholder="12,50" />
           </label>
         </div>
-        <label class="champ">
+        <div class="champ">
           <span>Appellation</span>
-          <input v-model="f.appellation" list="liste-appellations" autocapitalize="sentences" autocomplete="off" />
-        </label>
+          <ChampListe v-model="f.appellation" name="appellation" :options="appellations" titre-liste="Appellations" />
+        </div>
         <div class="ligne-2">
           <label class="champ">
             <span>Cuvée</span>
@@ -299,13 +324,13 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
       <h2 class="section-titre">Avis (optionnel)</h2>
       <section class="carte ligne-2">
         <label class="champ" :class="erreur('note')">
-          <span>Note</span>
-          <input v-model="f.note" name="note" inputmode="decimal" placeholder="16" />
+          <span>Note /100</span>
+          <input v-model="f.note" name="note" inputmode="decimal" placeholder="88" />
         </label>
-        <label class="champ">
+        <div class="champ">
           <span>Catégorie</span>
-          <input v-model="f.categorie" list="liste-categories" autocapitalize="sentences" />
-        </label>
+          <ChampListe v-model="f.categorie" name="categorie" :options="categories" titre-liste="Catégories" />
+        </div>
       </section>
 
       <section v-if="modification" class="zone-suppr">
@@ -314,8 +339,6 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
         </button>
       </section>
 
-      <datalist id="liste-appellations"><option v-for="a in appellations" :key="a" :value="a" /></datalist>
-      <datalist id="liste-categories"><option v-for="c in store.categories" :key="c" :value="c" /></datalist>
 
       <div class="valider">
         <button type="submit" class="btn btn-vert btn-large" :disabled="enCours">

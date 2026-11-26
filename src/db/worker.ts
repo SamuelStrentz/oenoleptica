@@ -25,6 +25,7 @@ import { definirAvis, listerCategories } from '@/repositories/avis'
 import { historique, reglerStock } from '@/repositories/stock'
 import { aujourdhui } from '@/domain/parsers'
 import { profilDuVin } from '@/repositories/profil'
+import { tableauDeBord } from '@/repositories/statistiques'
 import { degustationsDuVin, insererDegustation, supprimerDegustation } from '@/repositories/degustations'
 import type { Degustation } from '@/domain/profil/types'
 import type { AjoutVin, Cave, ChampsVin, FicheVin, InfoStockage, NouveauVigneron } from '@/domain/types'
@@ -236,6 +237,7 @@ const api = {
     degustations: degustationsDuVin(base(), idVin),
   }),
   historique: () => historique(base()),
+  tableauDeBord: () => tableauDeBord(base()),
 
   // --- Écriture (chaque appel est enregistré immédiatement)
   ajouterVin(d: AjoutVin) {

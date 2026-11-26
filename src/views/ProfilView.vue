@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** Profil : mes caves (créer / ouvrir), chiffres, sauvegarde, installation. */
+import BandeauLogo from '@/components/BandeauLogo.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icone from '@/components/Icone.vue'
@@ -144,6 +145,7 @@ async function supprimer() {
 
 <template>
   <main class="page">
+    <BandeauLogo />
     <header class="barre">
       <button class="bouton-icone" aria-label="Retour" @click="router.back()"><Icone nom="retour" /></button>
       <h1>Profil</h1>

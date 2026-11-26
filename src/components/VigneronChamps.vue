@@ -4,11 +4,14 @@
  * communes correspondantes ; en choisir une remplit CP, département, région
  * (ancienne région) et pays.
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import ChampListe, { type OptionListe } from './ChampListe.vue'
+import { useCaveStore } from '@/stores/cave'
 import { chercherParCp, chercherParNom, type Commune } from '@/utils/communes'
 import { ANCIENNES_REGIONS } from '@/domain/regions'
 
 export interface ChampsVigneron {
+  domaine: string
   prenom: string
   nom: string
   mail: string
@@ -22,6 +25,15 @@ export interface ChampsVigneron {
 
 const v = defineModel<ChampsVigneron>({ required: true })
 defineProps<{ erreurNom?: boolean }>()
+
+const store = useCaveStore()
+/** Domaines déjà connus (vins et vignerons de la cave). */
+const domaines = computed<OptionListe[]>(() => {
+  const noms = [...store.vins.map((x) => x.domaine), ...store.vignerons.flatMap((x) => x.domaines?.split(', ') ?? [])]
+  const vus = new Map<string, string>()
+  for (const n of noms) if (n?.trim() && !vus.has(n.toLowerCase())) vus.set(n.toLowerCase(), n)
+  return [...vus.values()].sort((a, b) => a.localeCompare(b, 'fr')).map((valeur) => ({ valeur }))
+})
 
 const suggestions = ref<Commune[]>([])
 const recherche = ref(false)
@@ -68,6 +80,10 @@ function fermerPlusTard() {
 
 <template>
   <div class="vigneron-champs">
+    <div class="champ">
+      <span>Domaine</span>
+      <ChampListe v-model="v.domaine" name="v_domaine" :options="domaines" titre-liste="Domaines de ta cave" placeholder="Domaine de…" />
+    </div>
     <div class="ligne-2">
       <label class="champ"><span>Prénom</span><input v-model="v.prenom" autocapitalize="sentences" autocomplete="off" /></label>
       <label class="champ" :class="{ invalide: erreurNom }">

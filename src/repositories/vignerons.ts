@@ -3,7 +3,7 @@ import type { SqlDb } from '@/db/sql'
 import type { LigneCatalogue, LiensVigneron, NouveauVigneron, Vigneron, VigneronListe } from '@/domain/types'
 
 export const COLS_VIGNERON = [
-  'prenom', 'nom', 'mail', 'adresse', 'cp', 'ville', 'departement', 'region', 'pays',
+  'domaine', 'prenom', 'nom', 'mail', 'adresse', 'cp', 'ville', 'departement', 'region', 'pays',
 ] as const
 
 export function insererVigneron(db: SqlDb, v: NouveauVigneron): number {
@@ -47,8 +47,8 @@ export function lireVigneron(db: SqlDb, id: number): Vigneron | undefined {
  * bouteilles. Les homonymes sont distingués par leur numéro.
  */
 export function listerVignerons(db: SqlDb): VigneronListe[] {
-  const lignes = db.all<Omit<VigneronListe, 'libelle'> & { prenom: string | null; nom: string }>(`
-    SELECT g.id_vigneron, g.prenom, g.nom, g.ville, g.region,
+  const lignes = db.all<Omit<VigneronListe, 'libelle'> & { prenom: string | null; nom: string; domaine: string | null }>(`
+    SELECT g.id_vigneron, g.domaine, g.prenom, g.nom, g.ville, g.region,
            (SELECT GROUP_CONCAT(domaine, ', ') FROM
               (SELECT DISTINCT domaine FROM vins v
                WHERE v.id_vigneron = g.id_vigneron AND TRIM(COALESCE(v.domaine, '')) <> ''
@@ -59,11 +59,14 @@ export function listerVignerons(db: SqlDb): VigneronListe[] {
     FROM vignerons g
     ORDER BY g.nom COLLATE NOCASE, g.prenom COLLATE NOCASE, g.id_vigneron`)
   const vus = new Set<string>()
-  return lignes.map(({ prenom, nom, ...reste }) => {
+  return lignes.map(({ prenom, nom, domaine, ...reste }) => {
     let libelle = [prenom, nom].filter(Boolean).join(' ')
     if (vus.has(libelle)) libelle += ` (n°${reste.id_vigneron})`
     vus.add(libelle)
-    return { ...reste, libelle }
+    // le domaine du vigneron d'abord, puis ceux de ses vins (sans doublon)
+    const tous = [domaine?.trim(), ...(reste.domaines?.split(', ') ?? [])].filter((d): d is string => !!d)
+    const uniques = tous.filter((d, i) => tous.findIndex((x) => x.toLowerCase() === d.toLowerCase()) === i)
+    return { ...reste, domaines: uniques.join(', ') || null, libelle }
   })
 }
 

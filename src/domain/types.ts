@@ -5,6 +5,16 @@ import type { Degustation, ProfilCalcule } from './profil/types'
 export const COULEURS = ['Rouge', 'Blanc', 'Rosé'] as const
 export const FORMATS = ['37,5 cl', '75 cl', '150 cl', '300 cl'] as const
 
+/** Catégories d'un vin (champ « categorie » de l'avis). */
+export const CATEGORIES_VIN: Record<string, string> = {
+  VCC: 'Vin de consommation courante',
+  VCM: 'Vin de consommation mondaine',
+  VCS: 'Vin de consommation spéciale',
+}
+
+/** Note globale (avis, dégustations) : sur 100. */
+export const NOTE_MAX = 100
+
 export type TypeMouvement = 'entrée' | 'sortie'
 
 /** Une ligne de la vue « cave » (équivalent de la vue Standard du desktop). */
@@ -32,6 +42,7 @@ export type VinStock = Pick<VinCave, 'id_vin' | 'domaine' | 'millesime' | 'appel
 
 export interface Vigneron {
   id_vigneron: number
+  domaine: string | null
   prenom: string | null
   nom: string
   mail: string | null

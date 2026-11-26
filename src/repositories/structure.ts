@@ -1,6 +1,6 @@
 /** Création, contrôle et mise à niveau de la structure d'une cave. */
 import type { SqlDb } from '@/db/sql'
-import { COLONNES_AJOUTEES, CEPAGES_INITIAUX, ORDRES_CREATE, TABLES_REQUISES } from '@/db/schema'
+import { COLONNES_AJOUTEES, CEPAGES_INITIAUX, ORDRES_CREATE, TABLES_REQUISES, VERSION_DONNEES } from '@/db/schema'
 import { COLONNES_PROFIL, ORDRE_CREATE_PROFILS, PROFILS_INITIAUX } from '@/db/profils-cepages'
 import { cleCepage } from '@/domain/cepages'
 import { ORDRE_CREATE_DEGUSTATIONS } from './degustations'
@@ -13,7 +13,34 @@ export function creerStructure(db: SqlDb): void {
     db.exec(ORDRE_CREATE_PROFILS)
     semerProfils(db)
     db.exec(ORDRE_CREATE_DEGUSTATIONS)
+    for (const [table, colonne, type] of COLONNES_AJOUTEES) {
+      if (!db.colonnes(table).includes(colonne)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${colonne} ${type}`)
+    }
+    db.exec(`PRAGMA user_version = ${VERSION_DONNEES}`)
   })
+}
+
+/**
+ * Notes globales sur 100. Les anciennes notes sont converties :
+ * jusqu'à 10 → ×10 (notes saisies sur 10), de 10 à 20 → ×5 (sur 20),
+ * au-delà de 20 → déjà sur 100, inchangées.
+ */
+function notesSur100(db: SqlDb): number {
+  let n = 0
+  for (const table of ['avis', 'degustations']) {
+    if (!db.tableExiste(table)) continue
+    n += db.run(`UPDATE ${table} SET note = ROUND(CASE WHEN note <= 10 THEN note * 10 ELSE note * 5 END, 1)
+                 WHERE note IS NOT NULL AND note <= 20`).changes
+  }
+  return n
+}
+
+/** Domaine d'un vigneron : repris de ses vins quand il n'en a qu'un. */
+function domainesDesVignerons(db: SqlDb): void {
+  db.run(`UPDATE vignerons SET domaine = (
+            SELECT MIN(v.domaine) FROM vins v WHERE v.id_vigneron = vignerons.id_vigneron)
+          WHERE TRIM(COALESCE(domaine, '')) = ''
+            AND (SELECT COUNT(DISTINCT v.domaine) FROM vins v WHERE v.id_vigneron = vignerons.id_vigneron) = 1`)
 }
 
 function semerCepages(db: SqlDb): void {
@@ -64,6 +91,7 @@ export function migrer(db: SqlDb): string[] {
       if (!db.colonnes(table).includes(colonne)) {
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${colonne} ${type}`)
         faits.push(`${table}.${colonne}`)
+        if (table === 'vignerons' && colonne === 'domaine') domainesDesVignerons(db)
       }
     }
     if (!db.tableExiste('cepages')) {
@@ -79,6 +107,11 @@ export function migrer(db: SqlDb): string[] {
     if (!db.tableExiste('degustations')) {
       db.exec(ORDRE_CREATE_DEGUSTATIONS)
       faits.push('degustations')
+    }
+    if (Number(db.valeur('PRAGMA user_version') ?? 0) < 1) {
+      const n = notesSur100(db)
+      if (n) faits.push(`${n} note(s) sur 100`)
+      db.exec(`PRAGMA user_version = ${VERSION_DONNEES}`)
     }
   })
   return faits

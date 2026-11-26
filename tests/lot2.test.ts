@@ -11,7 +11,7 @@ import { definirAvis } from '@/repositories/avis'
 import { ancienneRegion, ANCIENNES_REGIONS } from '@/domain/regions'
 
 const vigneron = (nom: string) => ({
-  prenom: null, nom, mail: null, adresse: null, cp: '07200', ville: 'Aubenas',
+  domaine: null, prenom: null, nom, mail: null, adresse: null, cp: '07200', ville: 'Aubenas',
   departement: 'Ardèche', region: 'Rhône-Alpes', pays: 'France',
 })
 

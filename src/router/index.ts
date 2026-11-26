@@ -14,6 +14,7 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'accueil', component: HomeView },
     { path: '/historique', name: 'historique', component: () => import('@/views/HistoriqueView.vue') },
+    { path: '/statistiques', name: 'statistiques', component: () => import('@/views/StatistiquesView.vue') },
     { path: '/ajout', name: 'ajout', component: () => import('@/views/VinFormView.vue'), meta: { formulaire: true } },
     {
       path: '/vin/:id/modifier', name: 'modifier-vin', props: true,

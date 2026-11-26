@@ -26,7 +26,7 @@ export default defineConfig({
         scope: '.',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#F6F2EE',
+        background_color: '#4A1325',
         theme_color: '#4A1325',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -36,7 +36,7 @@ export default defineConfig({
       },
       workbox: {
         // le moteur SQLite (.wasm) doit être disponible hors ligne
-        globPatterns: ['**/*.{js,css,html,wasm,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,wasm,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),

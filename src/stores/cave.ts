@@ -203,7 +203,7 @@ export const useCaveStore = defineStore('cave', () => {
     ajouterVin, modifierVin, supprimerVin, reglerStock, ajouterDegustation, supprimerDegustation,
     ajouterVigneron, modifierVigneron, supprimerVigneron, importerVignerons,
     // lectures ponctuelles (pas d'état partagé)
-    detailVin: api.detailVin, historique: api.historique, catalogue: api.catalogue,
+    detailVin: api.detailVin, historique: api.historique, tableauDeBord: api.tableauDeBord, catalogue: api.catalogue,
     vigneron: api.vigneron, liensVigneron: api.liensVigneron, tousLesVignerons: api.tousLesVignerons,
   }
 })

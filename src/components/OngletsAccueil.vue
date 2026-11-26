@@ -1,11 +1,12 @@
 <script setup lang="ts">
-/** Onglets de l'accueil : la cave / l'historique des entrées et sorties. */
+/** Onglets de l'accueil : la cave / l'historique des entrées et sorties / les statistiques. */
 </script>
 
 <template>
   <nav class="onglets" aria-label="Sections">
     <RouterLink to="/" replace>Ma cave</RouterLink>
     <RouterLink to="/historique" replace>Historique</RouterLink>
+    <RouterLink to="/statistiques" replace>Statistiques</RouterLink>
   </nav>
 </template>
 
@@ -18,7 +19,7 @@
   background: #ebe3de;
 }
 .onglets a {
-  padding: 7px 16px;
+  padding: 7px 13px;
   border-radius: 999px;
   font-size: 0.88rem;
   font-weight: 600;

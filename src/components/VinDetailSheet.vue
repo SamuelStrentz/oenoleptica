@@ -6,7 +6,7 @@ import BottomSheet from './BottomSheet.vue'
 import Icone from './Icone.vue'
 import ProfilVin from './profil/ProfilVin.vue'
 import StockSheet from './StockSheet.vue'
-import type { FicheVin, ProfilOrganoleptique } from '@/domain/types'
+import { CATEGORIES_VIN, type FicheVin, type ProfilOrganoleptique } from '@/domain/types'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
 import { formaterPrix, nombreCourt } from '@/domain/parsers'
@@ -120,8 +120,14 @@ async function modifier() {
           <dd>{{ nomComplet(detail.vigneron) }}{{ detail.vigneron.ville ? ` · ${detail.vigneron.ville}` : '' }}</dd>
         </template>
         <template v-for="(a, i) in detail.avis" :key="'avis' + i">
-          <dt>Avis</dt>
-          <dd>{{ joindre(a.note === null ? null : `${nombreCourt(a.note)}/20`, a.categorie) }}</dd>
+          <template v-if="a.note !== null">
+            <dt>Note</dt>
+            <dd>{{ nombreCourt(a.note) }}/100</dd>
+          </template>
+          <template v-if="a.categorie">
+            <dt>Catégorie</dt>
+            <dd>{{ a.categorie }}<small v-if="CATEGORIES_VIN[a.categorie.toUpperCase()]" class="precision"> · {{ CATEGORIES_VIN[a.categorie.toUpperCase()] }}</small></dd>
+          </template>
         </template>
       </dl>
 
@@ -141,7 +147,7 @@ async function modifier() {
           <li v-for="d in detail.degustations" :key="d.id_degustation">
             <span>{{ dateCourte(d.date_degustation) }}</span>
             <span class="resume-degustation">
-              {{ joindre(d.note === null ? null : `${nombreCourt(d.note)}/20`, d.conclusion) || 'sans note' }}
+              {{ joindre(d.note === null ? null : `${nombreCourt(d.note)}/100`, d.conclusion) || 'sans note' }}
               <small v-if="d.commentaire">« {{ d.commentaire }} »</small>
             </span>
             <button class="supprimer" :aria-label="`Supprimer la dégustation du ${dateCourte(d.date_degustation)}`" @click="supprimerDegustation(d.id_degustation!)">
@@ -244,6 +250,10 @@ async function modifier() {
   gap: 6px 14px;
   margin: 16px 0 0;
   font-size: 0.92rem;
+}
+.precision {
+  color: var(--discret);
+  font-size: 0.85em;
 }
 .infos dt {
   color: var(--discret);

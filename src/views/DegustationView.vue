@@ -86,7 +86,7 @@ async function enregistrer() {
   if (!fiche.value) return
   let note: number | null
   try {
-    note = nombre(f.note, 'La note', { min: 0, max: 20 })
+    note = nombre(f.note, 'La note', { min: 0, max: 100 })
   } catch (e) {
     ui.erreur(e)
     return
@@ -211,8 +211,8 @@ async function enregistrer() {
       <section class="carte">
         <div class="ligne-2">
           <label class="champ">
-            <span>Note /20</span>
-            <input v-model="f.note" inputmode="decimal" placeholder="16" />
+            <span>Note /100</span>
+            <input v-model="f.note" inputmode="decimal" placeholder="88" />
           </label>
           <label class="champ">
             <span>Date</span>

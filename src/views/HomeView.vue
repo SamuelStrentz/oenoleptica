@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** Accueil : la cave (vignettes), ou l'écran de création s'il n'y a pas encore de cave. */
+import BandeauLogo from '@/components/BandeauLogo.vue'
 import { nextTick, onMounted, ref } from 'vue'
 import { useCaveStore, type Filtre } from '@/stores/cave'
 import { useUiStore } from '@/stores/ui'
@@ -125,6 +126,7 @@ onMounted(async () => {
 
   <!-- La cave -->
   <main v-else class="page cave">
+    <BandeauLogo />
     <header class="entete">
       <OngletsAccueil />
       <h1>{{ store.nomCave }}</h1>

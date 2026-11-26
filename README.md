@@ -23,7 +23,7 @@ src/
 ├── domain/        types, cépages, validation des saisies
 ├── stores/        Pinia : cave (données), ui (toasts)
 ├── components/    AppFab (bouton central), VinCard, StockSheet, CepageChips, BottomSheet…
-├── views/         Accueil, AjoutVin, Vignerons, Profil
+├── views/         Accueil, Historique, Statistiques, Vin, Dégustation, Vignerons, Profil
 └── utils/         aides d'affichage
 tests/             tests Vitest sur une base en mémoire
 ```
@@ -76,4 +76,12 @@ npm run build      # vérification des types + build dans dist/
   hors ligne, la saisie reste manuelle). Les régions sont les **anciennes régions** (avant 2016).
 - **Profil › Exporter** produit un `.db` qui s'ouvre dans l'appli desktop ou DB Browser for SQLite.
   **Profil › Ouvrir une cave (.db)** (ou « J'ai déjà une base » au premier lancement) ajoute un `.db` existant comme nouvelle cave.
+- **Notes sur 100** (avis et dégustations). À l'ouverture d'une ancienne base (`PRAGMA user_version` à 0),
+  les notes sont converties une fois : ≤ 10 → ×10, de 10 à 20 → ×5, au-delà de 20 inchangées.
+- **Vignerons** : colonne `domaine` ajoutée (remplie depuis leurs vins quand il n'y en a qu'un).
+  Sur l'écran Vignerons, les boutons discrets **Importer** / **Exporter** de part et d'autre du + lisent et
+  produisent un script `.sql` ; l'import n'exécute jamais le SQL du fichier, il n'en lit que les valeurs.
+- **Statistiques** (onglet de l'accueil) : bouteilles en cave par couleur, appellation, département, et
+  maturité d'après la fenêtre de garde du moteur de profil.
+- Police de l'écran de lancement : Cormorant Garamond (licence OFL, `public/fonts/OFL.txt`).
 - ⚠️ Ne mets jamais ta base `.db` dans le dépôt : il est public sur GitHub Pages.

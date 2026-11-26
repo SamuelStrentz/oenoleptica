@@ -81,7 +81,14 @@ export const COLONNES_AJOUTEES: readonly [string, string, string][] = [
   ['vins', 'prix', 'REAL'],
   ['vignerons', 'ville', 'TEXT'],
   ['vignerons', 'mail', 'TEXT'],
+  ['vignerons', 'domaine', 'TEXT'],
 ]
+
+/**
+ * Version des données (PRAGMA user_version).
+ *  1 : notes globales (avis, dégustations) sur 100 au lieu de 20.
+ */
+export const VERSION_DONNEES = 1
 
 /** Cépages pré-remplis dans une base neuve : [nom, type]. */
 export const CEPAGES_INITIAUX: readonly [string, string][] = Object.entries(CEPAGES_DEFAUT).flatMap(

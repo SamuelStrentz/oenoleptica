@@ -13,8 +13,19 @@ const dossier = useDossierStore()
 const router = useRouter()
 const route = useRoute()
 
+/** Retire l'écran de lancement (index.html), après un court temps de présence. */
+function finLancement() {
+  const ecran = document.getElementById('lancement')
+  if (!ecran) return
+  const reste = Math.max(0, 1100 - performance.now())
+  setTimeout(() => {
+    ecran.classList.add('fini')
+    setTimeout(() => ecran.remove(), 500)
+  }, reste)
+}
+
 onMounted(async () => {
-  await store.demarrer()
+  await store.demarrer().finally(finLancement)
   await dossier.initialiser()
   // Pas de cave : seul l'accueil (écran de création) est accessible
   if (!store.prete && route.name !== 'accueil') router.replace('/')

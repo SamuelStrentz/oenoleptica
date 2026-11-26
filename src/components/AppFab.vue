@@ -4,7 +4,6 @@
  *  - Tap court            : ajouter une bouteille (ou un vigneron, sur la page Vignerons).
  *  - Appui long + glisser : menu en croix —
  *      ← Vignerons   ↑ Déguster (fiche de dégustation)   → Profil   ↓ Accueil
- *    Sur la page Vignerons : ← Importer (.sql)   → Exporter (tous les vignerons).
  *    On relâche sur une direction pour y aller, au centre pour annuler.
  *    Glisser franchement sans attendre ouvre aussi le menu.
  */
@@ -12,21 +11,14 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icone, { type CHEMINS } from './Icone.vue'
 import { vibrer } from '@/stores/ui'
-import { exporterTousLesVignerons, importerFichierVignerons } from '@/utils/vignerons-sql'
 
 type Direction = 'gauche' | 'haut' | 'droite' | 'bas'
 
-type Action = { libelle: string; icone: keyof typeof CHEMINS; route?: string; faire?: () => void }
-
-const ACTIONS_BASE: Record<Direction, Action> = {
+const ACTIONS: Record<Direction, { libelle: string; icone: keyof typeof CHEMINS; route: string }> = {
   gauche: { libelle: 'Vignerons', icone: 'vigneron', route: '/vignerons' },
   haut: { libelle: 'Déguster', icone: 'verre', route: '/degustation' },
   droite: { libelle: 'Profil', icone: 'profil', route: '/profil' },
   bas: { libelle: 'Accueil', icone: 'maison', route: '/' },
-}
-const ACTIONS_VIGNERONS: Partial<Record<Direction, Action>> = {
-  gauche: { libelle: 'Importer', icone: 'importer', faire: () => selecteur.value?.click() },
-  droite: { libelle: 'Exporter', icone: 'partager', faire: () => void exporterTousLesVignerons() },
 }
 const ORDRE: Direction[] = ['haut', 'gauche', 'droite', 'bas']
 
@@ -42,16 +34,12 @@ const cible = ref<Direction | null>(null)
 let depart = { x: 0, y: 0 }
 let minuteur: ReturnType<typeof setTimeout> | undefined
 
-const selecteur = ref<HTMLInputElement | null>(null)
-const ACTIONS = computed<Record<Direction, Action>>(() =>
-  route.path === '/vignerons' ? { ...ACTIONS_BASE, ...ACTIONS_VIGNERONS } : ACTIONS_BASE)
-
 const visible = computed(() => !route.meta.formulaire)
 /** Tap court : nouveau vigneron sur la page des vignerons, sinon nouvelle bouteille. */
 const cibleTap = computed(() => (route.path === '/vignerons' ? '/vignerons/nouveau' : '/ajout'))
 const libelleTap = computed(() => (route.path === '/vignerons' ? 'Ajouter un vigneron' : 'Ajouter une bouteille'))
 
-const consigne = computed(() => (cible.value ? ACTIONS.value[cible.value].libelle : 'Glisse vers une action'))
+const consigne = computed(() => (cible.value ? ACTIONS[cible.value].libelle : 'Glisse vers une action'))
 
 function ouvrir() {
   if (ouvert.value) return
@@ -91,18 +79,7 @@ function surRelache() {
   const choix = cible.value
   reinitialiser()
   if (!etaitOuvert) aller(cibleTap.value)
-  else if (choix) {
-    const action = ACTIONS.value[choix]
-    if (action.faire) action.faire()
-    else if (action.route) aller(action.route)
-  }
-}
-
-function surFichier(e: Event) {
-  const champ = e.target as HTMLInputElement
-  const fichier = champ.files?.[0]
-  champ.value = ''
-  if (fichier) void importerFichierVignerons(fichier)
+  else if (choix) aller(ACTIONS[choix].route)
 }
 
 function reinitialiser() {
@@ -120,7 +97,6 @@ onBeforeUnmount(() => clearTimeout(minuteur))
 </script>
 
 <template>
-  <input ref="selecteur" type="file" accept=".sql,text/plain,application/sql" hidden @change="surFichier" />
   <Transition name="voile">
     <div v-if="ouvert" class="voile" aria-hidden="true">
       <div class="radial">

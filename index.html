@@ -7,9 +7,60 @@
     <meta name="description" content="Œnoleptica — ma cave à vin, dans ma poche." />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="preload" href="fonts/cormorant-garamond-600.woff2" as="font" type="font/woff2" crossorigin />
     <title>Œnoleptica</title>
+    <style>
+      /* Écran de lancement : affiché avant le chargement de l'appli, retiré par App.vue */
+      @font-face {
+        font-family: 'Cormorant Garamond';
+        font-weight: 600;
+        font-display: block;
+        src: url('fonts/cormorant-garamond-600.woff2') format('woff2');
+      }
+      html { background: #4a1325; }
+      #lancement {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 6px;
+        background: radial-gradient(90% 55% at 50% 42%, #5e1a31 0%, #4a1325 70%);
+        transition: opacity 0.45s ease;
+      }
+      #lancement.fini { opacity: 0; pointer-events: none; }
+      #lancement img { width: 132px; height: 132px; animation: lancement-logo 1.6s ease-in-out infinite; }
+      #lancement h1 {
+        margin: 0;
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-weight: 600;
+        font-size: 2.9rem;
+        letter-spacing: 0.04em;
+        background: linear-gradient(180deg, #f6e3a6 0%, #d9b45e 45%, #a8802f 75%, #e8cc80 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%));
+      }
+      #lancement p {
+        margin: 0;
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 1.05rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #d9b45e;
+        opacity: 0.7;
+      }
+      @keyframes lancement-logo { 50% { transform: scale(1.04); } }
+    </style>
   </head>
   <body>
+    <div id="lancement" aria-hidden="true">
+      <img src="icons/icon.svg" alt="" />
+      <h1>Œnoleptica</h1>
+      <p>Ma cave à vin</p>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
