@@ -9,6 +9,7 @@ Elle utilise la **même base SQLite** (mêmes tables, mêmes triggers) que l'app
 |---|---|
 | Interface | Vue 3 (Composition API) + TypeScript |
 | Build / PWA | Vite + vite-plugin-pwa (Workbox) |
+| Lecture d'étiquette | Tesseract (`tesseract.js`, français), sur le téléphone, fichiers servis par l'appli dans `/ocr/` |
 | Base | SQLite WASM officiel (`@sqlite.org/sqlite-wasm`) dans un Web Worker, stockage OPFS « SAHPool » |
 | État | Pinia |
 | Tests | Vitest (couche base de données) |
@@ -20,7 +21,8 @@ Elle utilise la **même base SQLite** (mêmes tables, mêmes triggers) que l'app
 src/
 ├── db/            moteur : schema.ts (CREATE de master.db), sql.ts (surcouche), worker.ts, client.ts (RPC)
 ├── repositories/  accès aux données (portage des fonctions Python) : vins, stock, vignerons, avis, cepages, structure
-├── domain/        types, cépages, validation des saisies
+├── domain/        types, cépages, validation des saisies, etiquette.ts (rapprochement texte lu → vin)
+├── services/      ocr.ts (photo → texte)
 ├── stores/        Pinia : cave (données), ui (toasts)
 ├── components/    AppFab (bouton central), VinCard, StockSheet, CepageChips, BottomSheet…
 ├── views/         Accueil, Historique, Statistiques, Vin, Dégustation, Vignerons, Profil
@@ -87,4 +89,13 @@ npm run build      # vérification des types + build dans dist/
 - **Statistiques** (onglet de l'accueil) : bouteilles en cave par couleur, appellation, département, et
   maturité d'après la fenêtre de garde du moteur de profil.
 - Police de l'écran de lancement : Cormorant Garamond (licence OFL, `public/fonts/OFL.txt`).
-- ⚠️ Ne mets jamais ta base `.db` dans le dépôt : il est public sur GitHub Pages.
+- **Photo d'étiquette** (icône appareil photo dans « Ajouter une bouteille ») : la photo est réduite, passée en
+  niveaux de gris puis lue par Tesseract **sur le téléphone** (aucune image envoyée). Le moteur (≈ 5 Mo) se
+  télécharge au premier usage puis reste en cache. Le texte lu est comparé aux vins de la cave ouverte et du
+  référentiel : mots du domaine (60 %), de la cuvée (30 %), mention « sec » (10 %), avec tolérance d'une ou deux
+  lettres. Le millésime, le degré et la contenance lus sur l'étiquette l'emportent. Si le vigneron du vin
+  reconnu existe déjà dans la cave, il est sélectionné ; sinon il est pré-rempli en « Nouveau vigneron ».
+- **Référentiel** (**Profil › Référentiel des étiquettes**) : une base `.db` de même structure qu'une cave,
+  importée par l'utilisateur et rangée à part dans OPFS (`__referentiel__.db`, absente de « Mes caves »).
+  Tables en plus tolérées (sources, assemblages, remarques).
+- ⚠️ Ne mets jamais une base `.db` dans le dépôt (cave **ou référentiel**) : il est public sur GitHub Pages.

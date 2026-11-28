@@ -21,6 +21,8 @@ const store = useCaveStore()
 const ui = useUiStore()
 const dossier = useDossierStore()
 const fichier = ref<HTMLInputElement>()
+const fichierReferentiel = ref<HTMLInputElement>()
+const referentiel = ref<{ vignerons: number; vins: number } | null>(null)
 const persistee = ref<boolean | null>(null)
 const installation = ref<InstallEvent | null>(null)
 const version = __APP_VERSION__
@@ -37,6 +39,7 @@ function surInstallable(e: Event) {
 onMounted(async () => {
   window.addEventListener('beforeinstallprompt', surInstallable)
   persistee.value = (await navigator.storage?.persisted?.()) ?? null
+  referentiel.value = await store.infoReferentiel().catch(() => null)
 })
 onBeforeUnmount(() => window.removeEventListener('beforeinstallprompt', surInstallable))
 
@@ -117,6 +120,26 @@ async function importer(e: Event) {
   }
 }
 
+// ---------------------------------------------------------- référentiel
+async function importerReferentiel(e: Event) {
+  const entree = e.target as HTMLInputElement
+  const f = entree.files?.[0]
+  entree.value = ''
+  if (!f) return
+  try {
+    referentiel.value = await store.importerReferentiel(new Uint8Array(await f.arrayBuffer()))
+    ui.toast(`Référentiel chargé : ${pluriel(referentiel.value.vins, 'vin')}`)
+  } catch (err) {
+    ui.erreur(err)
+  }
+}
+
+async function supprimerReferentiel() {
+  if (!confirm('Retirer le référentiel du téléphone ?\n\nTes caves ne sont pas touchées.')) return
+  await agir(() => store.supprimerReferentiel(), 'Référentiel retiré')
+  referentiel.value = null
+}
+
 async function exporter() {
   try {
     const blob = await store.exporter()
@@ -183,6 +206,25 @@ async function supprimer() {
         </button>
       </div>
       <input ref="fichier" type="file" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/vnd.sqlite3,application/x-sqlite3" hidden @change="importer" />
+    </section>
+
+    <h2 class="section-titre">Référentiel des étiquettes</h2>
+    <section class="carte actions">
+      <p class="aide">
+        Une base de vins de référence (même format qu'une cave) qui aide à reconnaître une étiquette photographiée
+        dans « Ajouter une bouteille ». Elle reste sur le téléphone, à part de tes caves.
+      </p>
+      <dl v-if="referentiel" class="infos">
+        <dt>Contenu</dt>
+        <dd>{{ pluriel(referentiel.vins, 'vin') }} · {{ pluriel(referentiel.vignerons, 'vigneron') }}</dd>
+      </dl>
+      <button class="btn btn-large" @click="fichierReferentiel?.click()">
+        <Icone nom="importer" :taille="20" /> {{ referentiel ? 'Remplacer le référentiel (.db)' : 'Importer un référentiel (.db)' }}
+      </button>
+      <button v-if="referentiel" class="btn btn-large" @click="supprimerReferentiel">
+        <Icone nom="corbeille" :taille="20" /> Retirer le référentiel
+      </button>
+      <input ref="fichierReferentiel" type="file" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/vnd.sqlite3,application/x-sqlite3" hidden @change="importerReferentiel" />
     </section>
 
     <h2 class="section-titre">Dossier local</h2>

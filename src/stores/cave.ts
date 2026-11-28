@@ -205,6 +205,9 @@ export const useCaveStore = defineStore('cave', () => {
     // lectures ponctuelles (pas d'état partagé)
     detailVin: api.detailVin, historique: api.historique, tableauDeBord: api.tableauDeBord, catalogue: api.catalogue,
     vigneron: api.vigneron, liensVigneron: api.liensVigneron, tousLesVignerons: api.tousLesVignerons,
+    // référentiel et étiquettes
+    reconnaitreEtiquette: api.reconnaitreEtiquette, infoReferentiel: api.infoReferentiel,
+    importerReferentiel: api.importerReferentiel, supprimerReferentiel: api.supprimerReferentiel,
   }
 })
 

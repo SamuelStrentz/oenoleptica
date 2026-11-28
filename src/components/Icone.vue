@@ -29,6 +29,7 @@ export const CHEMINS = {
   cave: 'M4 21V10l8-6 8 6v11M9 21v-6h6v6',
   mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   partager: 'M12 3v13M7 8l5-5 5 5M5 14v6h14v-6',
+  photo: 'M4 8a1 1 0 011-1h3l1.5-2h5L16 7h3a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1zM12 16a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z',
 } as const
 </script>
 

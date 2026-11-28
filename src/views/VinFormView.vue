@@ -9,6 +9,8 @@ import Icone from '@/components/Icone.vue'
 import CepageChips from '@/components/CepageChips.vue'
 import VigneronChamps from '@/components/VigneronChamps.vue'
 import ChampListe, { type OptionListe } from '@/components/ChampListe.vue'
+import LectureEtiquette from '@/components/LectureEtiquette.vue'
+import type { IndicesEtiquette, Proposition } from '@/domain/etiquette'
 import { useCaveStore } from '@/stores/cave'
 import { useUiStore, vibrer } from '@/stores/ui'
 import { CATEGORIES_VIN, COULEURS, FORMATS, NOTE_MAX, type AjoutVin, type ChampsVin } from '@/domain/types'
@@ -17,7 +19,7 @@ import { APPELLATIONS } from '@/domain/profil/connaissances/appellations'
 import { REGIONS_VITICOLES } from '@/domain/profil/connaissances/millesimes'
 import { nombre, nombreCourt, prix, texte } from '@/domain/parsers'
 import { couleurPastille, pluriel } from '@/utils/affichage'
-import { versBase, vigneronVide } from '@/utils/vigneron'
+import { versBase, versFormulaire, vigneronVide } from '@/utils/vigneron'
 
 const props = defineProps<{ id?: string }>()
 
@@ -42,6 +44,7 @@ const stockActuel = ref(0)
 const champEnErreur = ref<string | null>(null)
 const enCours = ref(false)
 const charge = ref(!props.id)
+const lecture = ref<InstanceType<typeof LectureEtiquette>>()
 
 /** Domaines déjà en base, avec leur nombre de vins et leur(s) appellation(s). */
 const domaines = computed<OptionListe[]>(() => {
@@ -123,6 +126,36 @@ function surDomaine() {
     const vigneron = store.vignerons.find((v) => v.domaines?.split(', ').some((x) => x.toLowerCase() === d))
     if (vigneron) f.vigneron = vigneron.id_vigneron
   }
+}
+
+/**
+ * Applique le vin reconnu sur la photo. Ce qui est écrit sur l'étiquette
+ * (millésime, degré, contenance) l'emporte sur les données connues.
+ */
+function appliquerEtiquette(p: Proposition | null, ind: IndicesEtiquette) {
+  const t = (x: string | null) => x ?? ''
+  if (p) {
+    Object.assign(f, {
+      domaine: p.domaine, appellation: t(p.appellation), cuvee: t(p.cuvee), couleur: t(p.couleur),
+      cepage: t(p.cepage), style: t(p.style),
+    })
+    if (p.format) f.format = p.format
+    if (p.volume_alcool !== null) f.volume_alcool = nombreCourt(p.volume_alcool)
+    if (p.prix !== null && !f.prix) f.prix = p.prix.toFixed(2).replace('.', ',')
+    if (p.id_vigneron) f.vigneron = p.id_vigneron
+    else if (p.vigneron) {
+      f.vigneron = NOUVEAU
+      nouveauVigneron.value = versFormulaire({ ...p.vigneron, id_vigneron: 0 })
+    } else {
+      f.vigneron = AUCUN
+      surDomaine()
+    }
+  }
+  if (ind.millesime) f.millesime = String(ind.millesime)
+  if (ind.volume_alcool !== null) f.volume_alcool = nombreCourt(ind.volume_alcool)
+  if (ind.format) f.format = ind.format
+  if (ind.couleur && !f.couleur) f.couleur = ind.couleur
+  ui.toast(p ? `${p.domaine} : formulaire pré-rempli` : 'Informations de l\'étiquette reprises')
 }
 
 function lireChamps(): ChampsVin {
@@ -231,7 +264,18 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
         <Icone nom="retour" />
       </button>
       <h1>{{ modification ? 'Modifier le vin' : 'Ajouter une bouteille' }}</h1>
+      <button
+        v-if="!modification"
+        type="button"
+        class="bouton-icone photo"
+        aria-label="Photographier l'étiquette"
+        title="Photographier l'étiquette"
+        @click="lecture?.prendrePhoto()"
+      >
+        <Icone nom="photo" />
+      </button>
     </header>
+    <LectureEtiquette v-if="!modification" ref="lecture" @appliquer="appliquerEtiquette" />
 
     <form v-if="charge" @submit.prevent="enregistrer">
       <section class="carte">
@@ -361,6 +405,10 @@ const erreur = (cle: string) => ({ invalide: champEnErreur.value === cle })
 </template>
 
 <style scoped>
+.barre .photo {
+  margin-left: auto;
+  color: var(--accent);
+}
 .libelle {
   display: block;
   font-size: 0.82rem;

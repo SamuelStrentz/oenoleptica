@@ -27,10 +27,15 @@ import { aujourdhui } from '@/domain/parsers'
 import { profilDuVin } from '@/repositories/profil'
 import { tableauDeBord } from '@/repositories/statistiques'
 import { degustationsDuVin, insererDegustation, supprimerDegustation } from '@/repositories/degustations'
+import { candidatsCave, candidatsReferentiel, infoReferentiel, type InfoReferentiel } from '@/repositories/referentiel'
+import { rapprocher, type ResultatEtiquette } from '@/domain/etiquette'
 import type { Degustation } from '@/domain/profil/types'
 import type { AjoutVin, Cave, ChampsVin, FicheVin, InfoStockage, NouveauVigneron } from '@/domain/types'
 
 const FICHIER_IMPORT = '/__import__.db'
+/** Référentiel de vins importé par l'utilisateur (jamais livré avec l'appli). */
+const FICHIER_REFERENTIEL = '/__referentiel__.db'
+const FICHIERS_INTERNES = [FICHIER_IMPORT, FICHIER_REFERENTIEL]
 /** Fichier de la cave créée au lot 1 (avant les caves multiples). */
 const FICHIER_HISTORIQUE = '/cave.db'
 
@@ -38,6 +43,7 @@ let sqlite3: Sqlite3Static
 let pool: SAHPoolUtil | null = null
 let db: SqlDb | null = null
 let fichierCourant: string | null = null
+let referentiel: SqlDb | null = null
 
 function base(): SqlDb {
   if (!db) throw new Error("Aucune cave n'est ouverte.")
@@ -76,7 +82,7 @@ function listerCaves(): Cave[] {
     .getFileNames()
     // le pool range les noms sous forme d'URL (« Ma%20cave.db ») : on les décode
     .map(decoder)
-    .filter((f) => /\.db$/i.test(f) && f !== FICHIER_IMPORT)
+    .filter((f) => /\.db$/i.test(f) && !FICHIERS_INTERNES.includes(f))
     .map((fichier) => ({ fichier, nom: nomDeFichier(fichier) }))
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
 }
@@ -85,9 +91,23 @@ function existe(fichier: string): boolean {
   return listerCaves().some((c) => c.fichier.toLowerCase() === fichier.toLowerCase())
 }
 
-/** Chaque base occupe 2 emplacements du pool (fichier + journal). */
+/** Chaque base occupe 2 emplacements du pool (fichier + journal) ; +3 : nouvelle cave, import, référentiel. */
 async function prevoirPlace(): Promise<void> {
-  if (pool) await pool.reserveMinimumCapacity((listerCaves().length + 2) * 2 + 2)
+  if (pool) await pool.reserveMinimumCapacity((listerCaves().length + 3) * 2 + 2)
+}
+
+function referentielPresent(): boolean {
+  return !!pool && pool.getFileNames().map(decoder).includes(FICHIER_REFERENTIEL)
+}
+
+function ouvrirReferentiel(): SqlDb | null {
+  if (!referentiel && referentielPresent()) referentiel = connecter(FICHIER_REFERENTIEL)
+  return referentiel
+}
+
+function fermerReferentiel(): void {
+  referentiel?.brute.close()
+  referentiel = null
 }
 
 function connecter(fichier: string): SqlDb {
@@ -130,14 +150,14 @@ function sansWal(octets: Uint8Array): Uint8Array {
 }
 
 /** Vérifie qu'un fichier .db est bien une cave, dans un emplacement temporaire. */
-async function controler(octets: Uint8Array): Promise<Uint8Array> {
+async function controler(octets: Uint8Array, verifier: (essai: SqlDb) => void = verifierStructure): Promise<Uint8Array> {
   if (!pool) throw new Error("Le stockage du navigateur n'est pas disponible : import impossible.")
   const propres = sansWal(octets)
   await pool.importDb(chemin(FICHIER_IMPORT), propres)
   try {
     const essai = connecter(FICHIER_IMPORT)
     try {
-      verifierStructure(essai)
+      verifier(essai)
     } finally {
       essai.brute.close()
     }
@@ -219,6 +239,37 @@ const api = {
     const reste = listerCaves()[0]
     if (reste) ouvrir(reste.fichier)
     return info()
+  },
+
+  // --- Référentiel et étiquettes
+  infoReferentiel: (): InfoReferentiel | null => {
+    const ref = ouvrirReferentiel()
+    return ref ? infoReferentiel(ref) : null
+  },
+
+  /** Remplace le référentiel par ce fichier (même structure qu'une cave). */
+  async importerReferentiel(octets: Uint8Array): Promise<InfoReferentiel> {
+    await prevoirPlace()
+    const propres = await controler(octets, (essai) => {
+      verifierStructure(essai)
+      if (!Number(essai.valeur('SELECT count(*) FROM vins'))) throw new Error('Ce référentiel ne contient aucun vin.')
+    })
+    fermerReferentiel()
+    if (referentielPresent()) pool!.unlink(chemin(FICHIER_REFERENTIEL))
+    await pool!.importDb(chemin(FICHIER_REFERENTIEL), propres)
+    return infoReferentiel(ouvrirReferentiel()!)
+  },
+
+  supprimerReferentiel(): void {
+    fermerReferentiel()
+    if (referentielPresent()) pool!.unlink(chemin(FICHIER_REFERENTIEL))
+  },
+
+  /** Cherche le vin d'une étiquette (texte lu par l'OCR) dans la cave puis le référentiel. */
+  reconnaitreEtiquette(texte: string): ResultatEtiquette {
+    const ref = ouvrirReferentiel()
+    const candidats = [...candidatsCave(base()), ...(ref ? candidatsReferentiel(ref, base()) : [])]
+    return rapprocher(texte, candidats)
   },
 
   // --- Lecture

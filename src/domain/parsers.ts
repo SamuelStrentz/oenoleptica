@@ -24,8 +24,9 @@ export function nombre(brut: string | number | null | undefined, libelle: string
   if (!Number.isFinite(n) || (o.entier && !Number.isInteger(n))) {
     throw new Error(`${libelle} : « ${String(brut).trim()} » n'est pas une valeur valide.`)
   }
-  if (o.min !== undefined && n < o.min) throw new Error(`${libelle} doit être supérieur ou égal à ${o.min}.`)
-  if (o.max !== undefined && n > o.max) throw new Error(`${libelle} doit être inférieur ou égal à ${o.max}.`)
+  const e = /^la /i.test(libelle) ? 'e' : '' // « La note doit être inférieure… »
+  if (o.min !== undefined && n < o.min) throw new Error(`${libelle} doit être supérieur${e} ou égal${e} à ${o.min}.`)
+  if (o.max !== undefined && n > o.max) throw new Error(`${libelle} doit être inférieur${e} ou égal${e} à ${o.max}.`)
   return n
 }
 
